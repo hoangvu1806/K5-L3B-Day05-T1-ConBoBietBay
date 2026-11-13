@@ -264,9 +264,54 @@ Lúc tự xếp 5 phút đầu, Nguyên chọn "cần dược sĩ duyệt" cho `
 Nếu `luu_ghi_chu_suc_khoe` được tự làm, lời hứa sẽ là "Pharmacity nhớ giúp bạn, lần sau khỏi khai lại". Để ở mức cần khách duyệt thì lời hứa thành "bạn quyết định lưu gì, lưu cho ai". Khách mất một cú bấm, đổi lại không có dòng nào về sức khoẻ của mẹ hay vợ nằm trong hồ sơ mà khách không biết.
 
 ## §5. Prototype  (chặng 5)
-- Link hoặc file · công cụ · phần nào mock · có lời gọi AI thật không.
-- 1–2 ảnh có đánh số; mỗi số: thể hiện gì · nguyên tắc HAX/PAIR nào · mức tự chủ nào.
-- Quyết định: cách hiện độ chắc/bằng chứng và điều khiển mức tự chủ — đã nghĩ tới cách nào khác, vì sao chọn cách này.
+
+- File: [prototype/index.html](prototype/index.html), mở bằng trình duyệt. Cách dùng và bảng chú thích từng số nằm ở [prototype/README.md](prototype/README.md).
+- Công cụ: HTML, CSS, JavaScript thuần, màu và thành phần theo design token của shadcn/ui.
+- Mock toàn bộ. Trợ lý nhận ra dấu hiệu nguy hiểm, thuốc kê đơn và nhóm nguy cơ bằng danh sách từ khoá. Không có lời gọi AI thật. Bản thật cần model đọc tin nhắn, cộng một danh sách dấu hiệu nguy hiểm do dược sĩ duyệt chạy độc lập với model.
+- Một trang hai màn hình: khung chat bên phía khách, và bảng điều phối cho dược sĩ trực (bonus riêng của T1). Ca khó bấm qua được từ đầu tới cuối là K6, đúng ca demo bắt buộc "người dùng có dấu hiệu nguy hiểm". Gõ ca lạ vào ô chat thì prototype cũng đi theo đúng các mức ở §4, ví dụ "con mình 2 tuổi sốt 39 độ co giật" ra thẻ cấp cứu, "bé nhà mình 3 tuổi ho" thì chuyển dược sĩ.
+
+### Ảnh đánh số
+
+Ảnh 1 (K6): [prototype/screen-1.png](prototype/screen-1.png). Ảnh 2 (K8): [prototype/screen-2.png](prototype/screen-2.png). Ảnh 3 (ca thường): [prototype/screen-3.png](prototype/screen-3.png).
+
+| Số | Thể hiện gì | Nguyên tắc | Mức tự chủ |
+|---|---|---|---|
+| 1 | Dòng báo đang chat với trợ lý AI, AI không chẩn đoán, không nói liều | G1 | |
+| 2 | Thẻ đỏ "Cần đi cấp cứu ngay", nút Gọi 115, không có nút Đặt | G10 | `khuyen_di_kham` tự làm, `goi_y_san_pham` bị khoá |
+| 3 | "Vì sao mình khuyên đi khám", tô đúng chữ khách gõ | G11 | |
+| 4 | Trạng thái chuyển ca do hệ thống điền, tool lỗi thì báo "chưa kết nối được dược sĩ, bạn gọi 115 trước" | PAIR Errors | `chuyen_duoc_si` tự làm |
+| 5 | "Mình đã gọi 115" và "Mình nhắn nhầm", nhắn nhầm vẫn sang dược sĩ | PAIR Errors + Graceful Failure, G9 | đường chuyển người |
+| 6 | (tab K5) thẻ xám "Bán thuốc kê đơn · AI không làm", không có nút mua | G1 | `ban_thuoc_ke_don` cấm |
+| 7 | Nháp ghi chú sức khoẻ: lưu gì, cho ai, xoá ở đâu; "Đồng ý lưu", lưu xong có "Hoàn tác" | G9 | `luu_ghi_chu_suc_khoe` cần khách duyệt |
+| 8 | Danh sách điều kiện để AI được tự gợi ý, ca này trượt nên chuyển dược sĩ, có nút huỷ chuyển | G2, G11 | `chuyen_duoc_si` tự làm có hoàn tác |
+| 9 | Bốn câu sàng lọc bấm chọn, hỏi trước khi gợi ý | G10 | |
+| 10 | "Đủ 5/5 điều kiện sàng lọc", cách dùng chỉ về nhãn | G2 | |
+| 11 | Khách tự bấm Đặt, có "Ẩn gợi ý", "Hỏi dược sĩ thay" | G8 | `goi_y_san_pham` tự làm có điều kiện |
+| 12 | Ca NGUY HIỂM nằm đầu hàng chờ của dược sĩ | | |
+| 13 | Tóm tắt cho dược sĩ: người dùng thuốc, triệu chứng, tin nhắn gốc có tô chữ, khách đã bấm gì | PAIR Explainability | |
+| 14 | Bảng mức tự chủ của 5 tool, ở chân cột hàng chờ của dược sĩ | G1 | cả 5 mức |
+
+### Quyết định về cách hiện
+
+**Độ chắc và bằng chứng.** Nhóm hiện độ chắc bằng danh sách điều kiện sàng lọc (số 8, 10) và mấy chữ được tô lại từ tin nhắn của khách (số 3, 13).
+
+- Đã nghĩ tới con số phần trăm kiểu "độ tin cậy 72%". Loại vì khách không biết 72% thì nên làm gì, và con số đó không chặn được việc bán sai. Nhìn danh sách điều kiện thì khách thấy ngay AI đang thiếu thông tin gì, khai sai thì tự sửa được.
+- Đã nghĩ tới việc không hiện lý do, chỉ nói "mình chuyển dược sĩ nhé". Loại vì bị từ chối không rõ lý do thì khách dễ gắt. Hard tests của track cũng có sẵn ca khách gắt khi bị hỏi lại.
+
+**Cảnh báo cấp cứu.** Thẻ đỏ nằm ngay chỗ thẻ sản phẩm lẽ ra sẽ hiện.
+
+- Đã nghĩ tới banner đỏ trên đầu khung chat. Loại vì banner trên đầu dễ bị đọc lướt như thông báo hệ thống, còn khách đang nhìn đúng chỗ câu trả lời sắp hiện ra.
+
+**Điều khiển mức tự chủ.** Mỗi thẻ có nhãn mức (tự gợi ý, cần bạn đồng ý, AI không làm), và nút đi theo mức đó:
+
+- tự làm thì có hoàn tác hoặc huỷ (số 7 sau khi lưu, số 8, số 11)
+- cần duyệt thì có nút "Đồng ý lưu" (số 7)
+- cấm thì không có nút làm, chỉ có nút chuyển dược sĩ (số 6)
+
+Hai cách khác đã cân nhắc:
+
+- Hộp xác nhận bật lên trước mọi hành động. Loại vì ở K6, thêm một lần bấm là thêm thời gian trước khi khách gọi 115.
+- Cho khách tự chỉnh mức tự chủ trong cài đặt. Loại vì khách đang vội sẽ hạ mức an toàn xuống cho nhanh, mà người chịu hậu quả lại là người uống thuốc.
 
 ## §6. Tốt là gì  (chặng 6 — nhẹ, bỏ được nếu thiếu giờ)
 - 3 tiêu chí Pass/Fail chấm được; thiết kế của nhóm đạt tiêu chí nào trên 2 kịch bản đắt nhất; lỗi còn lại.
