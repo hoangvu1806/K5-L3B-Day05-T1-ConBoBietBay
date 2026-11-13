@@ -4,7 +4,7 @@
 
 | Họ và Tên | Mã Học Viên | Việc đã làm |
 |---|---|---|
-|  |  |  |
+| Đỗ Hoàng Vũ | 2A202603920 | Dựng prototype (§5): build màn hình, cắm mức tự chủ + nguyên tắc HAX/PAIR lên màn hình |
 |  |  |  |
 |  |  |  |
 
