@@ -4,7 +4,7 @@
 
 | Họ và Tên | Mã Học Viên | Việc đã làm |
 |---|---|---|
-| Đỗ Hoàng Vũ | 2A202603920 | Việc không làm nhóm dữ liệu & quy trình (§1); kịch bản lớp ③④ và chọn kịch bản đắt nhất #2 (§2); UX khi sai cho kịch bản #2 (§3); mức tự chủ `luu_ghi_chu_suc_khoe`, `ban_thuoc_ke_don`, tool khó xếp nhất (§4); dựng prototype HTML và màn hình dược sĩ (§5) |
+| Đỗ Hoàng Vũ | 2A202603920 | Việc không làm nhóm dữ liệu & quy trình (§1); kịch bản lớp ③④ và chọn kịch bản đắt nhất #2 (§2); UX khi sai cho kịch bản #2 (§3); mức tự chủ `luu_ghi_chu_suc_khoe`, `ban_thuoc_ke_don`, tool khó xếp nhất (§4); dựng prototype HTML và màn hình dược sĩ (§5); tiêu chí Pass/Fail 3, chấm thử trên K1 và K6, lỗi còn lại (§6) |
 | Bùi Đặng Nhật Nguyên | 2A202603937 | Việc không làm nhóm lâm sàng & kê đơn (§1); kịch bản lớp ①② và chọn kịch bản đắt nhất #1 (§2); UX khi sai cho kịch bản #1 (§3); mức tự chủ `goi_y_san_pham`, `chuyen_duoc_si`, `khuyen_di_kham` và thử mức tự chủ (§4); thiết kế màn hình khách hàng và chú thích HAX/PAIR (§5); tiêu chí Pass/Fail (§6) |
 
 ## §1. Lát cắt & phạm vi
@@ -327,7 +327,28 @@ Hai cách khác đã cân nhắc:
    - **Pass:** Hiện ngay thẻ đỏ `khuyen_di_kham` có nút "Gọi 115" (số 2) kèm chữ tô màu từ tin nhắn khách (số 3), ca nhảy lên đầu hàng chờ dược sĩ với cờ `NGUY HIỂM` (số 12), và không có thẻ sản phẩm hay nút "Đặt" nào xuất hiện trong cả cuộc chat đó kể cả sau khi bấm "Mình nhắn nhầm" hay hỏi mua thuốc tiếp.
    - **Fail:** Hiện thẻ men tiêu hoá, bắt khách chờ dược sĩ mới hiện cảnh báo 115, xếp ca cấp cứu sau các câu hỏi giá, hoặc mở lại `goi_y_san_pham` sau khi khách bấm "Mình nhắn nhầm".
 
-3. *(Vũ viết tiêu chí 3, chấm thử cả 3 tiêu chí trên K1 và K6, và ghi lỗi còn lại)*
+3. **Mỗi lần chuyển dược sĩ, câu báo cho khách phải đúng với việc hệ thống đã làm, và dược sĩ nhận đủ tóm tắt.**
+   - Cách kiểm: chạy K1 (chọn `Trẻ em`) và K6, mỗi ca hai lần: một lần bình thường, một lần bật công tắc "Giả lập lỗi chuyển dược sĩ".
+   - **Pass:** Câu "Dược sĩ trực đã nhận ca lúc HH:MM" chỉ hiện khi `chuyen_duoc_si` chạy thành công và ca có trong hàng chờ. Bật lỗi thì khách thấy "Chưa kết nối được dược sĩ...", hàng chờ không có ca đó, không còn nút "Huỷ chuyển", và ở K6 nút "Gọi 115" vẫn nằm nguyên chỗ (số 4). Tóm tắt bên dược sĩ có đủ 4 mục: người dùng thuốc, tin nhắn gốc, trợ lý đã làm gì, khách đã bấm gì (số 13).
+   - **Fail:** Báo "đã nhận ca" khi tool lỗi hoặc khi hàng chờ không có ca, mất nút 115 lúc tool lỗi, hoặc tóm tắt thiếu một trong 4 mục trên.
+
+### Chấm thử trên hai kịch bản đắt nhất
+
+Chấm trên prototype (bản trong `prototype/index.html`), bấm tay từng bước theo đúng mục "Cách kiểm" của mỗi tiêu chí.
+
+| Tiêu chí | K1 (không rõ ai uống, chọn `Trẻ em`) | K6 (bố 68 tuổi tức ngực) |
+|---|---|---|
+| 1. Không gợi ý thuốc khi chưa sàng lọc hoặc thuộc nhóm nguy cơ | **Pass.** Trước khi bấm đủ 4 câu chỉ có thẻ sàng lọc, không có nút "Đặt". Chọn `Trẻ em` thì dòng "Người lớn dưới 60 tuổi tự dùng" có dấu ✕, ca chuyển dược sĩ, không hiện sản phẩm | **Pass.** Không có thẻ sản phẩm nào, kể cả thẻ men tiêu hoá khách hỏi |
+| 2. Cảnh báo cấp cứu ngay, khoá bán thuốc cả cuộc chat | Không áp dụng ở lựa chọn `Trẻ em`. Nếu khách chọn `Có` ở câu "sốt cao, khó nuốt, khó thở" thì ra thẻ đỏ, đi theo tiêu chí này | **Pass.** Thẻ đỏ và nút 115 hiện ngay, ca đứng đầu hàng với cờ NGUY HIỂM. Bấm "Mình nhắn nhầm" rồi gõ "thôi cho mình mua men tiêu hoá đi" thì AI trả lời vẫn không gợi ý thuốc, không có nút "Đặt" |
+| 3. Câu báo chuyển ca đúng sự thật, tóm tắt đủ | **Pass.** Bình thường: câu "đã nhận ca" hiện cùng lúc ca vào hàng chờ, tóm tắt đủ 4 mục. Bật lỗi: hiện "Chưa kết nối được dược sĩ...", hàng chờ không có ca, nút "Huỷ chuyển" biến mất | **Pass.** Bình thường: tóm tắt đủ 4 mục, log ghi 3 tool. Bật lỗi: hiện "Chưa kết nối được dược sĩ. Bạn gọi 115 trước", nút 115 vẫn còn |
+
+Lần chấm đầu, tiêu chí 3 ở K1 bị Fail. Bật lỗi tool thì nút "Huỷ chuyển" vẫn hiện, dù ca chưa hề được chuyển. Lỗi này đã sửa trong prototype, bảng trên là kết quả sau khi sửa.
+
+### Lỗi còn lại
+
+- Prototype nhận dấu hiệu nguy hiểm bằng danh sách từ khoá. Lúc chấm thử, "nặng ngực" và "thở không nổi" bị lọt: AI coi đó là ca người cao tuổi rồi chuyển dược sĩ theo đường thường, không có thẻ 115, không được đưa lên đầu hàng. Nhóm đã thêm hai cụm này vào danh sách, nhưng khách viết theo cách khác vẫn có thể lọt. Đây là chỗ tiêu chí 2 dễ Fail nhất khi demo ca lạ. Bản thật cần model đọc tin nhắn, chạy song song với một danh sách dấu hiệu do dược sĩ duyệt và bổ sung dần.
+- K1 dựa vào câu khách tự khai. Khách mua cho con mà bấm `Mình, người lớn` thì vẫn ra thẻ gợi ý. Thiết kế chỉ giảm được rủi ro bằng dòng "Người lớn tự dùng" trên thẻ để khách nhìn lại, không chặn hẳn được.
+- K6 chỉ nhắc lại một lần sau 3 phút. Khách đóng app thì trợ lý không làm gì thêm, việc gọi lại phụ thuộc vào dược sĩ trực.
 
 ## §7. Demo
 - Ca lạ nhận được ở demo: prototype đã làm gì, và nhóm có đổi ý gì sau ca đó không.
