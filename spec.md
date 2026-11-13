@@ -204,11 +204,11 @@ Nếu `luu_ghi_chu_suc_khoe` được tự làm, lời hứa sẽ là "Pharmacit
 | 7 | Nháp ghi chú sức khoẻ: lưu gì, cho ai, xoá ở đâu; "Đồng ý lưu", lưu xong có "Hoàn tác" | G9 | `luu_ghi_chu_suc_khoe` cần khách duyệt |
 | 8 | Danh sách điều kiện để AI được tự gợi ý, ca này trượt nên chuyển dược sĩ, có nút huỷ chuyển | G2, G11 | `chuyen_duoc_si` tự làm có hoàn tác |
 | 9 | Bốn câu sàng lọc bấm chọn, hỏi trước khi gợi ý | G10 | |
-| 10 | "Đủ 4/4 điều kiện sàng lọc", cách dùng chỉ về nhãn | G2 | |
-| 11 | Khách tự bấm Đặt, có "Không cần gợi ý này", "Hỏi dược sĩ thay" | G8 | `goi_y_san_pham` tự làm có điều kiện |
+| 10 | "Đủ 5/5 điều kiện sàng lọc", cách dùng chỉ về nhãn | G2 | |
+| 11 | Khách tự bấm Đặt, có "Ẩn gợi ý", "Hỏi dược sĩ thay" | G8 | `goi_y_san_pham` tự làm có điều kiện |
 | 12 | Ca NGUY HIỂM nằm đầu hàng chờ của dược sĩ | | |
 | 13 | Tóm tắt cho dược sĩ: người dùng thuốc, triệu chứng, tin nhắn gốc có tô chữ, khách đã bấm gì | PAIR Explainability | |
-| 14 | Bảng mức tự chủ của 5 tool | G1 | cả 5 mức |
+| 14 | Bảng mức tự chủ của 5 tool, ở chân cột hàng chờ của dược sĩ | G1 | cả 5 mức |
 
 ### Quyết định về cách hiện
 
