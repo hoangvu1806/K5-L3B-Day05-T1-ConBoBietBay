@@ -131,7 +131,6 @@
   .card.blocked { background: hsl(var(--muted)); border-style: dashed; }
   .card.consent { border-color: hsl(var(--warning-line)); background: hsl(var(--warning-soft)); }
   .card.product { border-color: hsl(var(--accent-line)); }
-  .card.product .checklist { grid-template-columns: 1fr 1fr; column-gap: 10px; margin-bottom: 4px; }
   .why { font-size: 12.5px; margin: 8px 0 0; color: hsl(var(--foreground) / .85); }
   .status {
     display: inline-flex; align-items: center; gap: 7px; font-size: 12px; padding: 4px 10px; margin-top: 8px;
@@ -256,9 +255,11 @@
   </div>
   <div class="nav-label">Ca dựng sẵn</div>
   <nav>
+    <button class="demo-btn" data-case="K1"><svg class="i"><use href="#i-user"/></svg><span>K1 · không rõ ai uống<small>thiếu thông tin người dùng</small></span></button>
     <button class="demo-btn" data-case="K6"><svg class="i"><use href="#i-heart"/></svg><span>K6 · bố tức ngực<small>dấu hiệu nguy hiểm</small></span><span class="count">!</span></button>
     <button class="demo-btn" data-case="K8"><svg class="i"><use href="#i-clip"/></svg><span>K8 · lưu hồ sơ<small>hai việc một tin</small></span></button>
     <button class="demo-btn" data-case="K5"><svg class="i"><use href="#i-pill"/></svg><span>K5 · kháng sinh<small>thuốc kê đơn</small></span></button>
+    <button class="demo-btn" data-case="K4"><svg class="i"><use href="#i-chat"/></svg><span>K4 · nước muối<small>công dụng bị hiểu sai</small></span></button>
     <button class="demo-btn" data-case="NORMAL"><svg class="i"><use href="#i-chat"/></svg><span>Ca thường<small>người lớn đau họng</small></span></button>
   </nav>
   <div class="spacer"></div>
@@ -326,6 +327,8 @@ const CASES = {
   K6: "shop ơi bố mình 68t từ tối cứ tức ngực, vã mồ hôi, chắc ăn không tiêu. nhà còn ít men tiêu hoá, mua thêm loại nào uống cho đỡ đầy bụng ạ",
   K8: "lưu vào hồ sơ giúp em là mẹ em bị tiểu đường, đang uống thuốc huyết áp nhé, lần sau khỏi khai lại. À mẹ em đau răng từ chiều, mua gì giảm đau cho bà được ạ",
   K5: "e cần mua amoxicillin 500, hôm trc bác sĩ kê cho mẹ e r mà hết thuốc, đơn thì làm mất r. ship giúp e 2 vỉ nha",
+  K1: "đau họng sốt từ chiều, cho mình 1 hộp thuốc hạ sốt giảm đau loại nào nhạy nhất nhé, giao liền giúp",
+  K4: "pharmacity gần mình còn nước muối sinh lý loại tép của Pháp trị dứt điểm viêm xoang không, tối nay mình qua lấy luôn",
   NORMAL: "Họng mình đau rát 2 ngày nay, có thuốc gì không?"
 };
 
@@ -384,7 +387,7 @@ function sys(text) { return add(esc(text), "msg sys"); }
 
 function reset() {
   chat.innerHTML = "";
-  state = { locked: false, transferred: null, waitingAfterDanger: false, screening: null };
+  state = { locked: false, transferred: null, waitingAfterDanger: false, screening: null, awaitingArea: false };
   queue = [
     { id: "q1", title: "Hỏi giá nước muối sinh lý", time: "23:32", flag: null, summary: null },
     { id: "q2", title: "Còn hàng khẩu trang N95 không", time: "23:35", flag: null, summary: null }
@@ -400,8 +403,10 @@ function handle(text) {
     say("Bác đang có dấu hiệu cần đi cấp cứu nên mình không gợi ý thuốc trong cuộc chat này. Dược sĩ trực sẽ trả lời bạn ở đây.");
     return;
   }
+  if (state.awaitingArea) return areaFlow(text);
   const danger = found(text, DANGER);
   if (danger.length) return dangerFlow(text, danger);
+  if (/nước muối/i.test(text)) return salineFlow(text);
   const rx = found(text, RX);
   const wantsSave = /lưu/i.test(text);
   if (wantsSave) return saveFlow(text);
@@ -549,12 +554,32 @@ function riskFlow(text, risk, heading) {
   };
 }
 
+/* K4: hỏi sản phẩm không phải thuốc, kèm công dụng sai */
+function salineFlow(text) {
+  const claim = /trị dứt|dứt điểm|khỏi hẳn/i.test(text);
+  say((claim ? "Nước muối sinh lý chỉ giúp rửa mũi, làm sạch dịch nhầy, không trị dứt điểm viêm xoang. Viêm xoang kéo dài thì nên đi khám. " : "")
+    + "Bạn đang ở quận hay khu vực nào để mình tra nhà thuốc còn hàng?");
+  state.awaitingArea = true;
+}
+function areaFlow(text) {
+  state.awaitingArea = false;
+  const card = add(`
+    <h4>Nước muối sinh lý 0,9% dạng tép <span class="level lv-auto">AI tự gợi ý</span></h4>
+    <div>Nhà thuốc gần ${esc(shortTitle(text))}: còn hàng (dữ liệu dựng). Sản phẩm vệ sinh mũi, không phải thuốc điều trị.</div>
+    <div class="row">
+      <button class="btn primary" id="holdItem">Giữ hàng, tối qua lấy (bạn tự bấm)</button>
+      <button class="btn" id="hideItem">Không cần gợi ý này</button>
+    </div>`, "card product");
+  card.querySelector("#holdItem").onclick = e => { e.target.disabled = true; sys("Đã giữ hàng tới 22:00 tối nay."); };
+  card.querySelector("#hideItem").onclick = () => { card.remove(); say("Mình đã ẩn gợi ý. Bạn cần gì thêm thì cứ nhắn."); };
+}
+
 /* Ca thường: hỏi câu sàng lọc rồi mới gợi ý */
 function screeningFlow(text) {
   state.screening = {};
   say("Mình hỏi nhanh vài câu để chọn đúng sản phẩm, bấm là được.");
   const qs = [
-    ["who", "Ai sẽ dùng thuốc?", ["Mình", "Trẻ em", "Trên 60 tuổi"]],
+    ["who", "Ai sẽ dùng thuốc?", ["Mình, người lớn", "Trẻ em", "Người trên 60 tuổi"]],
     ["preg", "Có đang mang thai hoặc cho con bú?", ["Không", "Có"]],
     ["chronic", "Có bệnh nền hoặc đang uống thuốc khác?", ["Không", "Có"]],
     ["sign", "Có sốt cao, khó nuốt, khó thở không?", ["Không", "Có"]]
@@ -579,30 +604,49 @@ function finishScreening(text) {
     return;
   }
   if (pass < 4) {
-    const st = add("", "status");
     say("Trường hợp này mình chuyển dược sĩ chọn thuốc cho chắc.");
+    const who = ["người lớn", "trẻ em", "người trên 60 tuổi"][s.who];
+    const reasons = [who].concat(ok.preg ? [] : ["đang mang thai hoặc cho con bú"]).concat(ok.chronic ? [] : ["có bệnh nền hoặc đang uống thuốc khác"]);
+    const li = (good, label) => `<li class="${good ? "ck-ok" : "ck-no"}">${label}</li>`;
+    const card = add(`
+      <h4>Gợi ý thuốc <span class="level lv-auto">chuyển dược sĩ</span></h4>
+      <div>Người dùng thuốc là ${esc(reasons.join(", "))} nên mình không tự chọn thuốc. Dược sĩ sẽ chọn giúp bạn loại hợp với người dùng.</div>
+      <ul class="checklist" data-anno="8">
+        ${li(ok.who, "Người lớn dưới 60 tuổi tự dùng")}
+        ${li(ok.preg, "Không mang thai, không cho con bú")}
+        ${li(ok.chronic, "Không bệnh nền, không thuốc khác")}
+        ${li(ok.sign, "Không sốt cao, khó nuốt, khó thở")}
+      </ul>
+      <div class="status" id="screenStatus">Đang báo dược sĩ trực...</div>
+      <div class="row"><button class="btn link" id="cancelScreen">Huỷ chuyển, mình hỏi việc khác</button></div>`, "card");
     transfer({
-      flag: null, title: "Đau họng, nhóm cần dược sĩ xem", user: ["Người lớn", "Trẻ em", "Trên 60 tuổi"][s.who],
-      symptom: "Đau rát họng 2 ngày", raw: text,
+      flag: "NHÓM NGUY CƠ", title: shortTitle(text), user: cap(reasons.join(", ")),
+      symptom: "Xem tin nhắn gốc", raw: text,
       did: ["goi_y_san_pham → không chạy, thiếu " + (4 - pass) + "/4 điều kiện", "chuyen_duoc_si → ca này"],
       customer: "Đã trả lời câu sàng lọc", evidence: []
-    }, st, false);
+    }, card.querySelector("#screenStatus"), false);
+    card.querySelector("#cancelScreen").onclick = e => {
+      e.target.disabled = true;
+      queue = queue.filter(q => q.id !== state.transferred);
+      renderQueue(); renderDetail();
+      card.querySelector("#screenStatus").className = "status";
+      card.querySelector("#screenStatus").textContent = "Đã huỷ chuyển. Bạn có thể hỏi lại bất cứ lúc nào.";
+    };
     return;
   }
   const card = add(`
     <h4>Gợi ý cho bạn <span class="level lv-auto">AI tự gợi ý</span></h4>
     <div><b>Viên ngậm thảo dược dịu họng</b> (sản phẩm minh hoạ) · 45.000đ</div>
-    <div class="why" data-anno="10">Đủ 5/5 điều kiện sàng lọc:
+    <div class="why" data-anno="10">Đủ 4/4 điều kiện sàng lọc:
       <ul class="checklist">
-        <li class="ck-ok">Người lớn tự dùng</li><li class="ck-ok">Không mang thai, cho bú</li>
-        <li class="ck-ok">Không bệnh nền</li><li class="ck-ok">Không dùng thuốc khác</li>
-        <li class="ck-ok">Không dấu hiệu nguy hiểm</li>
+        <li class="ck-ok">Người lớn tự dùng</li><li class="ck-ok">Không mang thai, không cho con bú</li>
+        <li class="ck-ok">Không bệnh nền, không thuốc khác</li><li class="ck-ok">Không sốt cao, khó nuốt, khó thở</li>
       </ul>
       Cách dùng: xem trên nhãn hoặc hỏi dược sĩ. Đau quá 5 ngày hoặc sốt thì nên đi khám.
     </div>
     <div class="row" data-anno="11">
       <button class="btn primary" id="order">Đặt (bạn tự bấm)</button>
-      <button class="btn" id="hide">Ẩn gợi ý</button>
+      <button class="btn" id="hide">Không cần gợi ý này</button>
       <button class="btn" id="askPharm">Hỏi dược sĩ thay</button>
     </div>`, "card product");
   card.querySelector("#order").onclick = e => { e.target.disabled = true; sys("Đã thêm vào giỏ. Bạn xác nhận đơn ở bước thanh toán."); };
@@ -610,7 +654,7 @@ function finishScreening(text) {
   card.querySelector("#askPharm").onclick = e => {
     e.target.disabled = true;
     const st = add("", "status");
-    transfer({ flag: null, title: "Đau họng, khách muốn hỏi dược sĩ", user: "Người lớn", symptom: "Đau rát họng 2 ngày", raw: text,
+    transfer({ flag: null, title: shortTitle(text), user: "Người lớn tự dùng", symptom: "Xem tin nhắn gốc", raw: text,
       did: ["goi_y_san_pham → đã gợi ý viên ngậm", "chuyen_duoc_si → khách tự bấm"], customer: "Bấm Hỏi dược sĩ thay", evidence: [] }, st, false);
   };
 }
