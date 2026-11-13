@@ -167,6 +167,15 @@
     font: 500 12px Inter, system-ui, sans-serif; cursor: pointer; color: hsl(var(--foreground));
   }
   .chip:hover { border-color: hsl(var(--accent-line)); }
+  .chip:disabled { opacity: .55; cursor: not-allowed; }
+  .q.missing { border-radius: 10px; padding: 4px 6px; margin-left: -6px; margin-right: -6px; background: hsl(var(--warning-soft)); box-shadow: inset 0 0 0 1px hsl(var(--warning-line)); animation: nudge .35s; }
+  .q.missing > div::after { content: " (chưa chọn)"; color: hsl(var(--warning)); font-weight: 600; }
+  .progress { margin-top: 10px; font-size: 12px; color: hsl(var(--muted-foreground)); }
+  .progress.done { color: hsl(var(--success)); }
+  .msg.warn { align-self: flex-start; max-width: 86%; font-size: 13px; padding: 9px 12px; border-radius: 14px; background: hsl(var(--warning-soft)); color: hsl(var(--foreground)); box-shadow: inset 0 0 0 1px hsl(var(--warning-line)); }
+  .msg.warn b { color: hsl(var(--warning)); }
+  .composer input.bad { border-color: hsl(var(--warning)); animation: nudge .35s; }
+  @keyframes nudge { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
   .chip.on { background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); border-color: hsl(var(--primary)); }
   .level { display: inline-flex; align-items: center; gap: 5px; height: 21px; padding: 0 9px; border-radius: 999px; font-size: 11px; font-weight: 500; white-space: nowrap; letter-spacing: 0; }
   .level::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
@@ -384,6 +393,7 @@ function add(html, cls) {
 }
 function say(text) { return add('<div class="who">Trợ lý AI</div>' + esc(text), "msg ai"); }
 function sys(text) { return add(esc(text), "msg sys"); }
+function warn(html) { return add(html, "msg warn"); }
 
 function reset() {
   chat.innerHTML = "";
@@ -397,8 +407,21 @@ function reset() {
   renderDetail();
 }
 
+/* Nhắc khi khách gửi tin trong lúc thẻ sàng lọc còn thiếu câu trả lời.
+   Dấu hiệu nguy hiểm luôn được xử lý trước, không bao giờ bị nhắc chặn lại. */
+function pendingScreening() {
+  return state.screenCard && !state.screenDone && state.screenCard.isConnected;
+}
+function nudgeScreening() {
+  const card = state.screenCard;
+  const miss = [...card.querySelectorAll(".q")].filter(q => !q.querySelector(".chip.on"));
+  card.querySelectorAll(".q").forEach(q => q.classList.toggle("missing", !q.querySelector(".chip.on")));
+  warn("<b>Bạn còn " + miss.length + "/4 câu chưa chọn.</b> Mình chưa gợi ý thuốc được vì chưa biết ai sẽ dùng. Bạn bấm nốt các câu được tô vàng ở thẻ phía trên giúp mình nhé.");
+}
+
 function handle(text) {
   add(esc(text), "msg user");
+  if (pendingScreening() && !state.locked && !found(text, DANGER).length) return nudgeScreening();
   if (state.locked) {
     say("Bác đang có dấu hiệu cần đi cấp cứu nên mình không gợi ý thuốc trong cuộc chat này. Dược sĩ trực sẽ trả lời bạn ở đây.");
     return;
@@ -458,6 +481,7 @@ function dangerFlow(text, danger) {
   }, card.querySelector("#dangerStatus"), true);
   card.querySelector("#calledBtn").onclick = e => {
     e.target.disabled = true;
+    card.querySelector("#mistakeBtn").disabled = true;
     add(esc("Mình đã gọi 115 / đang đưa bác đi"), "msg user");
     say("Bạn ở cạnh bác, mang theo các thuốc bác đang dùng để đưa bác sĩ xem. Dược sĩ trực sẽ nhắn hỏi thăm sau.");
     updateCase({ customer: "Đã bấm: đã gọi 115 / đang đưa đi (" + now() + ")" });
@@ -465,6 +489,7 @@ function dangerFlow(text, danger) {
   };
   card.querySelector("#mistakeBtn").onclick = e => {
     e.target.disabled = true;
+    card.querySelector("#calledBtn").disabled = true;
     add(esc("Mình nhắn nhầm, không có dấu hiệu này"), "msg user");
     say("Mình vẫn để dược sĩ trực xem lại ca này cho chắc, bạn chờ vài phút. Trong lúc đó mình không gợi ý thuốc.");
     updateCase({ customer: "Đã bấm: nhắn nhầm, không có dấu hiệu này (" + now() + "). Cần dược sĩ hỏi lại." });
@@ -587,11 +612,25 @@ function screeningFlow(text) {
   const card = add('<h4>Câu sàng lọc</h4>' + qs.map(([k, label, opts]) =>
     `<div class="q"><div>${label}</div><span>${opts.map((o, i) => `<button class="chip" data-k="${k}" data-i="${i}">${o}</button>`).join("")}</span></div>`).join(""), "card");
   card.dataset.anno = "9";
+  card.insertAdjacentHTML("beforeend", '<div class="progress" id="screenProgress">Đã chọn 0/4 câu</div>');
+  state.screenCard = card;
+  state.screenDone = false;
   card.querySelectorAll(".chip").forEach(ch => ch.onclick = () => {
+    if (state.screenDone) return;
     card.querySelectorAll(`.chip[data-k="${ch.dataset.k}"]`).forEach(c => c.classList.remove("on"));
     ch.classList.add("on");
+    ch.closest(".q").classList.remove("missing");
     state.screening[ch.dataset.k] = +ch.dataset.i;
-    if (Object.keys(state.screening).length === qs.length) finishScreening(text);
+    const n = Object.keys(state.screening).length;
+    const pg = card.querySelector("#screenProgress");
+    pg.textContent = "Đã chọn " + n + "/" + qs.length + " câu";
+    if (n === qs.length) {
+      state.screenDone = true;
+      pg.classList.add("done");
+      pg.textContent = "Đã chọn đủ 4/4 câu. Muốn đổi câu trả lời thì nhắn lại từ đầu, mình hỏi lại.";
+      card.querySelectorAll(".chip").forEach(c => c.disabled = true);
+      finishScreening(text);
+    }
   });
 }
 
@@ -761,7 +800,13 @@ $("#tick").onclick = () => {
 $("#composer").onsubmit = e => {
   e.preventDefault();
   const v = $("#input").value.trim();
-  if (!v) return;
+  if (!v) {
+    const inp = $("#input");
+    inp.classList.remove("bad"); void inp.offsetWidth; inp.classList.add("bad");
+    inp.placeholder = "Bạn gõ nội dung trước khi gửi nhé";
+    setTimeout(() => { inp.classList.remove("bad"); inp.placeholder = "Nhắn cho dược sĩ..."; }, 1800);
+    return;
+  }
   $("#input").value = "";
   handle(v);
 };
