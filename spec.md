@@ -43,24 +43,137 @@ K6 còn là ca trông đúng mà vẫn rủi ro. Khách hỏi men tiêu hoá, AI
 Suýt chọn K5 (đòi kháng sinh không có đơn). K5 cũng không chấp nhận được, vì thuốc đã uống thì không đảo lại. Nhóm không chọn vì cách chặn K5 khá thẳng: để `ban_thuoc_ke_don` ở mức cấm và cấm luôn gợi ý thay thế là chặn được gần hết. K6 thì không có tool nào bị gọi sai quyền, AI gọi tool hợp lệ cho một câu hỏi hợp lệ mà vẫn hại người, nên K6 mới cần thiết kế lại phần AI đọc tin nhắn và cách hiện cảnh báo.
 
 ## §3. Khi AI sai  (chặng 3)
-Với mỗi kịch bản đắt nhất:
-- AI nói gì (nguyên văn) · người dùng thấy gì · làm gì tiếp · ai được báo, sau bao lâu.
-- Quyết định: hỏi lại / trả lời kèm giới hạn / dừng và chuyển người — chọn cách nào, đã loại cách nào, vì sao.
-- Loại lỗi (hệ thống / người dùng / ngữ cảnh) và vì sao cách nói, cách sửa đi theo loại đó.
-- 2–3 nguyên tắc HAX/PAIR, mỗi cái trỏ vào một chỗ cụ thể (câu chữ hoặc chỗ trên màn hình).
-- Lỗi nào sửa câu chữ không cứu được (nếu có), và thiết kế cứu nó thế nào.
+
+### Kịch bản đắt nhất #1
+
+*(Nguyên viết)*
+
+### Kịch bản đắt nhất #2: K6, bố 68 tuổi tức ngực, khách hỏi men tiêu hoá
+
+**Chọn cách nào.** AI dừng việc bán thuốc, khuyên đi khám ngay bằng `khuyen_di_kham`, đồng thời báo dược sĩ trực. Khách không phải chờ dược sĩ mới biết cần làm gì.
+
+Hai cách còn lại nhóm đã cân nhắc và loại:
+
+- Hỏi lại ("bác đau ngực kiểu gì, bao lâu rồi?"). Mỗi câu hỏi thêm là thêm một lượt chờ khách gõ, mà khách đang tin bố chỉ đầy bụng nên dễ trả lời qua loa cho xong. Hỏi kiểu này còn làm khách nghĩ AI đang cân nhắc bán thuốc gì, trong khi với tức ngực và vã mồ hôi ở người 68 tuổi thì câu trả lời nào cũng dẫn tới đi khám.
+- Trả lời kèm giới hạn (gửi men tiêu hoá, kèm dòng "nếu đau ngực nhiều thì nên đi khám"). Nút "Đặt" vẫn nằm đó, khách sẽ chọn việc dễ hơn là mua thuốc. Dòng cảnh báo nằm cuối tin nhắn, lúc gần nửa đêm thì gần như chắc không ai đọc.
+
+**AI nói (nguyên văn):**
+
+> Tức ngực kèm vã mồ hôi ở người lớn tuổi là dấu hiệu cần đi cấp cứu, không nên chờ xem có phải đầy bụng không. Bạn gọi 115 hoặc đưa bác tới cơ sở y tế gần nhất ngay bây giờ, đừng để bác tự đi lại một mình. Trường hợp này mình không gợi ý thuốc. Mình là trợ lý AI, dược sĩ trực đã nhận ca của bạn và sẽ nhắn ở cuộc chat này.
+
+Câu cuối chỉ hiện sau khi `chuyen_duoc_si` trả về thành công (lý do ở mục "lỗi sửa câu chữ không cứu được" bên dưới). AI chỉ nói đây là dấu hiệu cần đi cấp cứu, không gọi tên bệnh, vì §1 đã chốt không chẩn đoán.
+
+**Khách thấy gì.**
+
+- Thẻ cảnh báo màu đỏ nằm trên cùng, thay cho thẻ sản phẩm. Trong thẻ có nút "Gọi 115" bấm là gọi luôn.
+- Dòng "Vì sao mình khuyên đi khám", tô màu đúng mấy chữ lấy từ tin nhắn của khách: "68t", "tức ngực", "vã mồ hôi".
+- Dòng trạng thái lấy từ hệ thống: "Dược sĩ trực đã nhận ca lúc 23:41".
+- Không có thẻ men tiêu hoá, không có nút "Đặt".
+- Hai nút phụ: "Mình đã gọi 115 / đang đưa bác đi" và "Mình nhắn nhầm, bác không đau ngực".
+
+**Khách làm gì tiếp.**
+
+- Gọi 115, hoặc bấm "đã gọi". Dược sĩ thấy trạng thái này và nhắn hỏi lại sau.
+- Bấm "Mình nhắn nhầm". Ca vẫn chuyển cho dược sĩ, AI không quay lại gợi ý men tiêu hoá. Khách lỡ tay hay đang chối thì người có chuyên môn vẫn xem ca, khách chỉ mất thêm vài phút.
+- Không làm gì. Sau 3 phút AI nhắn thêm một câu: "Bác đã được đưa đi khám chưa? Nếu chưa, bạn bấm Gọi 115 ở trên." Ca vẫn đứng đầu hàng chờ của dược sĩ.
+
+**Ai được báo, sau bao lâu.** Dược sĩ trực online được báo ngay lúc thẻ đỏ hiện. Ca gắn cờ "dấu hiệu nguy hiểm" và nhảy lên đầu hàng, không xếp sau các câu hỏi giá. Dược sĩ thấy tóm tắt gồm: người dùng thuốc là bố khách, 68 tuổi; triệu chứng tức ngực, vã mồ hôi từ tối; nguyên văn tin nhắn; AI đã khuyên gọi 115; khách đã bấm nút nào.
+
+**Loại lỗi: lỗi ngữ cảnh.** Nếu AI gửi men tiêu hoá thì hệ thống vẫn chạy đúng như thiết kế cũ. Khách hỏi men tiêu hoá, tool gợi ý đúng men tiêu hoá, nhưng kết quả sai với tình huống thật của người bệnh. Vì vậy:
+
+- Cách nói: không xin lỗi kiểu "hệ thống gặp sự cố", vì không có gì hỏng. Cũng không nói như thể khách sai ("bạn hỏi nhầm thuốc rồi"). Người đang lo cho bố mà bị bắt lỗi thì dễ cãi lại hoặc bỏ đi. AI chỉ nói điều cần làm ngay và lý do.
+- Cách sửa: sửa câu trả lời chưa đủ, phải sửa thiết kế. Nhóm thêm bước quét dấu hiệu nguy hiểm trên toàn bộ tin nhắn, chạy trước khi AI xét khách đang hỏi mua gì. Quét ra dấu hiệu thì `goi_y_san_pham` bị khoá trong cả cuộc chat đó (xem luật ở §4).
+
+**Nguyên tắc HAX/PAIR.**
+
+- G11 (giải thích vì sao): dòng "Vì sao mình khuyên đi khám" tô màu đúng chữ khách đã gõ. Khách tự kiểm được là AI đọc đúng tin nhắn của mình, không phải doạ cho có.
+- G10 (thu hẹp phạm vi khi nghi ngờ): có dấu hiệu nguy hiểm thì AI bỏ hẳn phần bán thuốc. Thẻ đỏ không có nút "Đặt", AI cũng không gợi ý thuốc khác thay vào.
+- PAIR Errors + Graceful Failure: nút "Mình nhắn nhầm" là đường lui khi AI cảnh báo thừa. Đường lui đó dẫn sang dược sĩ, không mở lại nút bán thuốc. Cảnh báo thừa thì khách mất vài phút, cảnh báo thiếu thì có thể mất người.
+
+**Lỗi sửa câu chữ không cứu được.**
+
+1. Thẻ men tiêu hoá có nút "Đặt". Câu cảnh báo viết kỹ đến mấy mà ngay bên dưới vẫn có nút đặt hàng thì khách vẫn bấm đặt. Chỉ thiết kế mới chặn được: có dấu hiệu nguy hiểm thì `goi_y_san_pham` bị khoá ở tầng hệ thống, model không gọi được dù có muốn.
+2. AI nói "dược sĩ đã nhận ca" trong khi `chuyen_duoc_si` chưa chạy hoặc bị lỗi. Model hoàn toàn có thể viết câu này mà không gọi tool, và khách sẽ ngồi chờ một người không tới. Cách sửa là để câu "đã nhận ca" và giờ nhận ca do hệ thống điền khi tool trả về thành công. Tool lỗi thì thẻ hiện "Chưa kết nối được dược sĩ, bạn gọi 115 trước", nút 115 vẫn ở nguyên chỗ cũ.
 
 ## §4. Mức tự chủ  (chặng 4)
-Với mỗi tool:
-- Mức của nhóm (tự làm / cần người duyệt / cấm). Nếu cần người duyệt: ai duyệt · người duyệt thấy gì · quá hạn thì sao.
-- Lý do theo cost-of-error: sai thì ai chịu gì · đảo lại được không · chờ người thì mất gì.
-- Phương án đã cân nhắc và vì sao loại.
 
-Thêm:
-- Tool khó xếp nhất: mỗi người từng chọn gì, cái giá của mỗi phía (trỏ về kịch bản ở §2), nhóm chốt thế nào.
-- Thử mức đã đặt trên 2 kịch bản đắt nhất + 1 kịch bản bình thường: cái sai có bị chặn không? còn việc nào làm khi lẽ ra phải hỏi? người dùng bình thường có phải chờ vô ích không?
-- Luật thêm hoặc tool tách bước (nếu có), và vì sao.
-- Một mức tự chủ đã đổi lời hứa nào với người dùng.
+### Mức của từng tool
+
+| Tool | Mức | Người viết lập luận |
+|---|---|---|
+| `goi_y_san_pham` | *(Nguyên điền sau khi nhóm chốt)* | Nguyên |
+| `chuyen_duoc_si` | *(Nguyên điền)* | Nguyên |
+| `khuyen_di_kham` | *(Nguyên điền)* | Nguyên |
+| `luu_ghi_chu_suc_khoe` | cần khách duyệt, tách làm hai bước | Vũ |
+| `ban_thuoc_ke_don` | cấm | Vũ |
+
+**`luu_ghi_chu_suc_khoe`: cần khách duyệt, tách hai bước.**
+
+- Bước 1, AI tự làm: soạn nháp ghi chú, chỉ hiện cho khách xem, chưa lưu gì.
+- Bước 2, khách duyệt: bấm "Đồng ý lưu" thì mới ghi vào hồ sơ.
+- Người duyệt là khách, chủ tài khoản. Trước khi bấm, khách thấy nội dung sẽ lưu, lưu cho ai ("thông tin của mẹ bạn, lưu trong hồ sơ của bạn"), ai đọc được (dược sĩ Pharmacity), và xoá ở đâu.
+- Khách không bấm thì không lưu, bản nháp mất khi đóng cuộc chat. Không có chuyện quá hạn thì tự lưu.
+- Cost-of-error: lưu sai thì người bị ghi lại chịu thiệt, nhiều khi là người nhà chưa hề đồng ý (K8). Bảng tool nói xoá được nhưng đã có rủi ro lộ, tức lộ rồi thì không rút lại. Ngược lại, chờ khách duyệt chỉ tốn một cú bấm, chậm lưu thì không hại ai.
+- Đã cân nhắc "tự làm": loại vì vi phạm rubric riêng mục 7 và đúng lỗi ở K8. Khách nói "lưu giúp" chưa phải là đồng ý, vì khách chưa thấy sẽ lưu gì, cho ai.
+- Đã cân nhắc "cấm": loại vì mất cái lợi thật. Lần sau dược sĩ biết sẵn bệnh nền và thuốc đang dùng, khách đỡ phải khai lại. Khách gắt khi bị hỏi lại cũng nằm trong Hard tests của track.
+
+**`ban_thuoc_ke_don`: cấm.**
+
+- Cost-of-error: bán sai thì người uống chịu hại và không đảo lại được (bảng tool ghi "Không"). Với kháng sinh còn có thêm rủi ro kháng thuốc. Nhà thuốc thì chịu trách nhiệm vì bán thuốc kê đơn không có đơn.
+- Đã cân nhắc "cần khách xác nhận": loại, vì người xác nhận chính là người đang muốn mua. Ở K5 khách đã tự nói "bác sĩ kê rồi", thêm một nút xác nhận thì khách vẫn bấm. Chat cũng không có cách kiểm đơn thuốc thật.
+- Đã cân nhắc "cần dược sĩ duyệt": loại ở phía AI. Đã có dược sĩ xem đơn thì việc bán là của dược sĩ, làm trong quy trình của nhà thuốc. AI chỉ cần `chuyen_duoc_si` kèm tóm tắt.
+- Chờ người thì mất gì: khách phải ra nhà thuốc mang đơn, hoặc chờ dược sĩ vài phút. Cái giá này nhỏ hơn nhiều so với bán sai một liều kháng sinh.
+- Luật kèm theo: khi khách đòi thuốc kê đơn, AI cũng không được dùng `goi_y_san_pham` để gửi một thuốc không kê đơn "dùng tạm" (rubric riêng mục 5). Không có luật này thì cấm `ban_thuoc_ke_don` vẫn để lọt lỗi ở K5.
+
+### Tool khó xếp nhất: `goi_y_san_pham`
+
+Mỗi người tự xếp 5 tool trong 5 phút, chưa bàn với nhau:
+
+| Tool | Vũ | Nguyên |
+|---|---|---|
+| `goi_y_san_pham` | tự làm có điều kiện | *(Nguyên điền)* |
+| `chuyen_duoc_si` | tự làm | *(Nguyên điền)* |
+| `khuyen_di_kham` | tự làm | *(Nguyên điền)* |
+| `luu_ghi_chu_suc_khoe` | cần khách duyệt | *(Nguyên điền)* |
+| `ban_thuoc_ke_don` | cấm | *(Nguyên điền)* |
+
+`goi_y_san_pham` khó xếp vì mức nào cũng có giá:
+
+- Tự làm: đúng lỗi ở K6. AI gửi men tiêu hoá cho người tức ngực, và ở K8 là gửi thuốc giảm đau cho người già đang uống thuốc huyết áp. Thuốc đã uống thì không đảo lại.
+- Cần dược sĩ duyệt mọi gợi ý: khách hỏi nước muối sinh lý (tin mồi 1) hay người lớn khoẻ hỏi viên ngậm đau họng cũng phải xếp hàng. Hàng chờ dài ra thì ca nguy hiểm thật cũng bị chậm theo, ngược với vế "ca nguy hiểm không nằm trong hàng chờ" của lát cắt.
+- Cấm: mất luôn lý do tích hợp AI, và khách lúc nửa đêm thì cần được trả lời ngay.
+
+Cách nhóm chốt: tự làm có điều kiện.
+
+- AI chỉ gọi `goi_y_san_pham` khi đã biết người dùng thuốc là người lớn, không mang thai hay cho con bú, không có bệnh nền, không đang uống thuốc kê đơn, và không có dấu hiệu nguy hiểm.
+- Chỉ gợi ý sản phẩm không kê đơn.
+- Thiếu một điều kiện thì AI hỏi thêm câu sàng lọc hoặc chuyển dược sĩ.
+- Có dấu hiệu nguy hiểm thì tool bị khoá cả cuộc chat.
+- Khách vẫn phải tự bấm "Đặt", AI không tự tạo đơn.
+
+*(Nguyên bổ sung lý do của mình nếu lúc đầu chọn khác, và nhóm chốt sau khi bàn.)*
+
+### Thử mức đã đặt
+
+**Trên K6 (đắt nhất #2):**
+
+- Cái sai có bị chặn không? Có. "Tức ngực, vã mồ hôi" làm khoá `goi_y_san_pham`, thẻ men tiêu hoá không hiện. `khuyen_di_kham` tự làm nên khách thấy thẻ đỏ ngay, không phải chờ ai. `chuyen_duoc_si` tự làm nên dược sĩ nhận ca ngay lúc đó.
+- Còn việc nào AI làm khi lẽ ra phải hỏi không? `khuyen_di_kham` chạy mà không hỏi lại. Nhóm cố ý để vậy: cảnh báo thừa thì khách mất vài phút, có nút "Mình nhắn nhầm" để lui, còn hỏi thêm một câu ở ca thật thì mất thời gian không lấy lại được.
+- Người dùng bình thường có phải chờ vô ích không? Ở K6 thì không. Ca dễ cảnh báo thừa là một người trẻ viết "ăn no quá tức ngực". Người đó vẫn thấy thẻ khuyên đi khám và được chuyển dược sĩ. Nhóm chấp nhận cái giá này.
+
+**Trên K8 (`luu_ghi_chu_suc_khoe`):** AI không lưu ngay khi khách nói "lưu giúp". Khách thấy nháp "thông tin của mẹ bạn: tiểu đường, đang uống thuốc huyết áp" cùng nút "Đồng ý lưu". Việc thứ hai (thuốc giảm đau cho bà) thiếu điều kiện "không bệnh nền, không thuốc kê đơn" nên `goi_y_san_pham` không chạy, AI chuyển dược sĩ.
+
+*(K1 đắt nhất #1 và kịch bản bình thường: Nguyên thử.)*
+
+### Luật thêm và tool tách bước
+
+- Tách `luu_ghi_chu_suc_khoe` thành "soạn nháp" (tự làm) và "lưu" (khách duyệt). Nhờ vậy chặn được K8, AI không lưu bệnh của người nhà chỉ vì khách nói "lưu giúp".
+- Luật khoá: phát hiện dấu hiệu nguy hiểm thì khoá `goi_y_san_pham` trong cả cuộc chat. Luật này chặn K6.
+- Luật cấm thay thế: khách đòi thuốc kê đơn thì không gợi ý thuốc không kê đơn "dùng tạm". Luật này chặn nửa còn lại của K5.
+
+### Mức tự chủ đã đổi lời hứa nào với khách
+
+Nếu `luu_ghi_chu_suc_khoe` được tự làm, lời hứa sẽ là "Pharmacity nhớ giúp bạn, lần sau khỏi khai lại". Để ở mức cần khách duyệt thì lời hứa thành "bạn quyết định lưu gì, lưu cho ai". Khách mất một cú bấm, đổi lại không có dòng nào về sức khoẻ của mẹ hay vợ nằm trong hồ sơ mà khách không biết.
 
 ## §5. Prototype  (chặng 5)
 - Link hoặc file · công cụ · phần nào mock · có lời gọi AI thật không.
