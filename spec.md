@@ -268,11 +268,11 @@ Nếu `luu_ghi_chu_suc_khoe` được tự làm, lời hứa sẽ là "Pharmacit
 - File: [prototype/index.html](prototype/index.html), mở bằng trình duyệt. Cách dùng và bảng chú thích từng số nằm ở [prototype/README.md](prototype/README.md).
 - Công cụ: HTML, CSS, JavaScript thuần, màu và thành phần theo design token của shadcn/ui.
 - Mock toàn bộ. Trợ lý nhận ra dấu hiệu nguy hiểm, thuốc kê đơn và nhóm nguy cơ bằng danh sách từ khoá. Không có lời gọi AI thật. Bản thật cần model đọc tin nhắn, cộng một danh sách dấu hiệu nguy hiểm do dược sĩ duyệt chạy độc lập với model.
-- Một trang hai màn hình: khung chat bên phía khách, và bảng điều phối cho dược sĩ trực (bonus riêng của T1). Ca khó bấm qua được từ đầu tới cuối là K6, đúng ca demo bắt buộc "người dùng có dấu hiệu nguy hiểm". Gõ ca lạ vào ô chat thì prototype cũng đi theo đúng các mức ở §4, ví dụ "con mình 2 tuổi sốt 39 độ co giật" ra thẻ cấp cứu, "bé nhà mình 3 tuổi ho" thì chuyển dược sĩ.
+- Một trang hai màn hình: khung chat bên phía khách, và bảng điều phối cho dược sĩ trực (bonus riêng của T1). Hai kịch bản đắt nhất đều bấm qua được từ đầu tới cuối: K6 là ca demo bắt buộc "người dùng có dấu hiệu nguy hiểm", K1 chọn "Trẻ em" ở câu sàng lọc là ca "người dùng thuốc là trẻ nhỏ". Thanh bên có thêm K8, K5, K4 và một ca thường. Gõ ca lạ vào ô chat thì prototype cũng đi theo đúng các mức ở §4, ví dụ "con mình 2 tuổi sốt 39 độ co giật" ra thẻ cấp cứu, "bé nhà mình 3 tuổi ho" thì chuyển dược sĩ.
 
 ### Ảnh đánh số
 
-Ảnh 1 (K6): [prototype/screen-1.png](prototype/screen-1.png). Ảnh 2 (K8): [prototype/screen-2.png](prototype/screen-2.png). Ảnh 3 (ca thường): [prototype/screen-3.png](prototype/screen-3.png).
+Ảnh 1 (K6): [prototype/screen-1.png](prototype/screen-1.png). Ảnh 2 (K8): [prototype/screen-2.png](prototype/screen-2.png). Ảnh 3 (K1 chọn "Trẻ em"): [prototype/screen-3.png](prototype/screen-3.png). Ảnh 4 (ca thường): [prototype/screen-4.png](prototype/screen-4.png).
 
 | Số | Thể hiện gì | Nguyên tắc | Mức tự chủ |
 |---|---|---|---|
@@ -281,12 +281,12 @@ Nếu `luu_ghi_chu_suc_khoe` được tự làm, lời hứa sẽ là "Pharmacit
 | 3 | "Vì sao mình khuyên đi khám", tô đúng chữ khách gõ | G11 | |
 | 4 | Trạng thái chuyển ca do hệ thống điền, tool lỗi thì báo "chưa kết nối được dược sĩ, bạn gọi 115 trước" | PAIR Errors | `chuyen_duoc_si` tự làm |
 | 5 | "Mình đã gọi 115" và "Mình nhắn nhầm", nhắn nhầm vẫn sang dược sĩ | PAIR Errors + Graceful Failure, G9 | đường chuyển người |
-| 6 | (tab K5) thẻ xám "Bán thuốc kê đơn · AI không làm", không có nút mua | G1 | `ban_thuoc_ke_don` cấm |
+| 6 | (ca K5, không có trong ảnh) thẻ xám "Bán thuốc kê đơn · AI không làm", không có nút mua | G1 | `ban_thuoc_ke_don` cấm |
 | 7 | Nháp ghi chú sức khoẻ: lưu gì, cho ai, xoá ở đâu; "Đồng ý lưu", lưu xong có "Hoàn tác" | G9 | `luu_ghi_chu_suc_khoe` cần khách duyệt |
-| 8 | Danh sách điều kiện để AI được tự gợi ý, ca này trượt nên chuyển dược sĩ, có nút huỷ chuyển | G2, G11 | `chuyen_duoc_si` tự làm có hoàn tác |
-| 9 | Bốn câu sàng lọc bấm chọn, hỏi trước khi gợi ý | G10 | |
-| 10 | "Đủ 5/5 điều kiện sàng lọc", cách dùng chỉ về nhãn | G2 | |
-| 11 | Khách tự bấm Đặt, có "Ẩn gợi ý", "Hỏi dược sĩ thay" | G8 | `goi_y_san_pham` tự làm có điều kiện |
+| 8 | Danh sách điều kiện để AI được tự gợi ý, điều kiện nào trượt thì đánh dấu ✕, chuyển dược sĩ, có nút huỷ chuyển (ảnh 2 và 3) | G2, G11 | `chuyen_duoc_si` tự làm có hoàn tác |
+| 9 | Bốn câu sàng lọc bấm chọn, hỏi trước khi gợi ý (ảnh 3) | G10 | |
+| 10 | "Đủ 4/4 điều kiện sàng lọc", cách dùng chỉ về nhãn (ảnh 4) | G2 | |
+| 11 | Khách tự bấm Đặt, có "Không cần gợi ý này", "Hỏi dược sĩ thay" (ảnh 4) | G8 | `goi_y_san_pham` tự làm có điều kiện |
 | 12 | Ca NGUY HIỂM nằm đầu hàng chờ của dược sĩ | | |
 | 13 | Tóm tắt cho dược sĩ: người dùng thuốc, triệu chứng, tin nhắn gốc có tô chữ, khách đã bấm gì | PAIR Explainability | |
 | 14 | Bảng mức tự chủ của 5 tool, ở chân cột hàng chờ của dược sĩ | G1 | cả 5 mức |
