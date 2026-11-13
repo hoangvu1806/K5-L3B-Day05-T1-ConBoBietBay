@@ -332,7 +332,7 @@ const CASES = {
   NORMAL: "Họng mình đau rát 2 ngày nay, có thuốc gì không?"
 };
 
-const DANGER = ["tức ngực", "đau ngực", "thắt ngực", "khó thở", "vã mồ hôi", "co giật", "lơ mơ", "ngất", "tím tái", "ho ra máu"];
+const DANGER = ["tức ngực", "đau ngực", "thắt ngực", "nặng ngực", "khó thở", "thở không nổi", "vã mồ hôi", "co giật", "lơ mơ", "ngất", "tím tái", "ho ra máu"];
 const RX = ["amoxicillin", "kháng sinh", "augmentin", "cefixim", "azithromycin", "thuốc kê đơn"];
 const CHRONIC = ["tiểu đường", "huyết áp", "tim mạch", "hen", "suy thận"];
 
@@ -665,6 +665,8 @@ function transfer(info, statusEl, urgent) {
   statusEl.textContent = "Đang báo dược sĩ trực...";
   setTimeout(() => {
     if ($("#failTool").checked) {
+      const c = statusEl.closest(".card");
+      if (c) c.querySelectorAll("#cancelScreen, #cancelTransfer").forEach(x => x.remove());
       statusEl.className = "status fail";
       statusEl.textContent = urgent
         ? "Chưa kết nối được dược sĩ. Bạn gọi 115 trước, mình sẽ thử báo lại."
