@@ -51,9 +51,61 @@ Suýt chọn K5 (đòi kháng sinh không có đơn). K5 cũng không chấp nh�
 
 ## §3. Khi AI sai  (chặng 3)
 
-### Kịch bản đắt nhất #1
+### Kịch bản đắt nhất #1: K1, khách hỏi thuốc hạ sốt giảm đau "loại nhạy nhất" nhưng không nói người uống là ai
 
-*(Nguyên viết)*
+**Chọn cách nào.** AI chưa gọi `goi_y_san_pham` ngay, mà chọn **hỏi lại bằng thẻ 4 câu sàng lọc dạng bấm chọn** trước. Sau khi khách bấm đủ 4 câu: nếu người dùng thuốc thuộc nhóm nguy cơ (trẻ em, người trên 60 tuổi, đang mang thai hoặc cho con bú, có bệnh nền hoặc đang uống thuốc khác) thì AI dừng gợi ý và gọi `chuyen_duoc_si`; nếu có sốt cao, khó nuốt, khó thở thì chuyển thẳng sang `khuyen_di_kham`; chỉ khi đạt đủ 4/4 điều kiện an toàn thì mới mở `goi_y_san_pham` kèm giới hạn không tự nói liều.
+
+Hai cách còn lại nhóm đã cân nhắc và loại ở bước đầu:
+
+- Trả lời kèm giới hạn ngay lập tức (gửi luôn thẻ thuốc hạ sốt người lớn kèm dòng lưu ý "không dùng cho trẻ nhỏ và phụ nữ mang thai"). Loại vì khách ở K1 đang vội ("giao liền giúp"), thấy nút "Đặt" hiện sẵn thì bấm mua ngay mà bỏ qua dòng chữ nhỏ bên dưới, dẫn tới trẻ nhỏ hoặc bà bầu ở nhà uống nhầm thuốc không đảo lại được.
+- Dừng và chuyển dược sĩ ngay từ câu đầu cho mọi tin nhắn thiếu thông tin người uống. Loại vì thực tế hầu hết khách nhắn câu đầu đều quên nói người uống là ai. Nếu ca nào cũng đẩy thẳng sang `chuyen_duoc_si` mà không qua bước sàng lọc nhanh thì hàng chờ của dược sĩ sẽ bị nghẽn bởi cả những ca người lớn khoẻ mạnh hỏi thuốc thông thường, làm chậm luôn các ca nguy hiểm thật sự như K6.
+
+**AI nói (nguyên văn):**
+
+Ở bước 1 (ngay khi nhận tin nhắn chưa rõ người uống):
+
+> Mình hỏi nhanh vài câu để chọn đúng sản phẩm, bấm là được.
+
+Ở bước 2a (khi khách bấm chọn "Trẻ em" hoặc đối tượng nguy cơ khác, tức trượt điều kiện sàng lọc):
+
+> Trường hợp này mình chuyển dược sĩ chọn thuốc cho chắc.
+
+Ở bước 2b (nếu khách bấm đủ 4/4 điều kiện là người lớn tự dùng, không mang thai, không bệnh nền, không sốt cao hay khó thở):
+
+> Viên ngậm thảo dược dịu họng (sản phẩm minh hoạ), 45.000đ. Đủ 4/4 điều kiện sàng lọc. Cách dùng: xem trên nhãn hoặc hỏi dược sĩ. Đau quá 5 ngày hoặc sốt thì nên đi khám.
+
+**Khách thấy gì.**
+
+- Thanh thông báo cố định trên đầu khung chat (chú thích số 1 trên prototype): "Bạn đang chat với trợ lý AI. Câu hỏi về thuốc, AI chuyển cho dược sĩ khi cần. AI không chẩn đoán và không nói liều."
+- Thẻ "Câu sàng lọc" (chú thích số 9) hiện ngay dưới tin nhắn của khách, gồm 4 câu hỏi dạng nút bấm chọn (chip), khách không phải gõ phím:
+  1. "Ai sẽ dùng thuốc?": `Mình, người lớn`, `Trẻ em`, `Người trên 60 tuổi`
+  2. "Có đang mang thai hoặc cho con bú?": `Không`, `Có`
+  3. "Có bệnh nền hoặc đang uống thuốc khác?": `Không`, `Có`
+  4. "Có sốt cao, khó nuốt, khó thở không?": `Không`, `Có`
+- Không có bất kỳ thẻ sản phẩm hay nút "Đặt" nào xuất hiện khi khách chưa bấm xong 4 câu này.
+- Nếu khách bấm chọn nhóm nguy cơ (ví dụ chọn `Trẻ em` ở K1, hoặc tin nhắn đã khai sẵn như K2, K8), khách thấy danh sách điều kiện sàng lọc chỉ rõ điều kiện nào không đạt kèm nút "Huỷ chuyển, mình hỏi việc khác" (chú thích số 8) và dòng trạng thái hệ thống: "Dược sĩ trực đã nhận ca lúc HH:MM, sẽ nhắn bạn ở cuộc chat này".
+- Nếu khách đạt đủ 4/4 điều kiện, khách thấy thẻ sản phẩm kèm khung bằng chứng "Đủ 4/4 điều kiện sàng lọc" (chú thích số 10) và 3 nút: "Đặt (bạn tự bấm)", "Không cần gợi ý này", "Hỏi dược sĩ thay" (chú thích số 11).
+
+**Khách làm gì tiếp.**
+
+- Bấm chọn 4 nút trên thẻ sàng lọc (chỉ mất khoảng 3 giây, tránh làm khách gắt vì bị hỏi lại nhiều lượt bằng chữ như trong Hard tests).
+- Khi ca được chuyển sang dược sĩ, nếu khách đổi ý hoặc chỉ muốn hỏi thông tin khác thì bấm "Huỷ chuyển, mình hỏi việc khác" để rút ca khỏi hàng chờ.
+- Khi đủ 4/4 điều kiện và hiện thẻ sản phẩm, khách tự bấm "Đặt (bạn tự bấm)" để thêm vào giỏ, bấm "Không cần gợi ý này" để ẩn thẻ ngay, hoặc bấm "Hỏi dược sĩ thay" nếu vẫn muốn người thật tư vấn.
+- Nếu khách bỏ dở không bấm câu sàng lọc nào, hệ thống đứng yên ở bước sàng lọc, không gọi `goi_y_san_pham` và không tạo đơn.
+
+**Ai được báo, sau bao lâu.** Lúc đang chờ khách bấm 4 câu sàng lọc thì chưa báo ai để giữ sạch hàng chờ. Ngay khi khách bấm xong mà trượt từ 1 điều kiện trở lên (ví dụ chọn `Trẻ em`), hệ thống gọi `chuyen_duoc_si` báo ngay lập tức cho dược sĩ trực. Trên bảng điều phối (Màn hình 2), dược sĩ thấy tóm tắt ca (chú thích số 13) gồm: người dùng thuốc ("Trẻ em"), triệu chứng, nguyên văn tin nhắn gốc, log hệ thống ghi rõ "`goi_y_san_pham` không chạy, thiếu điều kiện", và trạng thái "Đã trả lời câu sàng lọc".
+
+**Loại lỗi: lỗi người dùng kết hợp lỗi ngữ cảnh.** Khách nhắn thiếu thông tin người uống vì thói quen ngoài đời (nghĩ thuốc hạ sốt đau họng nào cũng uống chung được), còn nếu AI tự mặc định người nhắn là người uống rồi gọi `goi_y_san_pham` thì đó là lỗi ngữ cảnh của hệ thống. Vì vậy:
+
+- Cách nói: không đổ lỗi cho khách kiểu "bạn khai thiếu tuổi nên mình không tìm được thuốc". AI chỉ nói ngắn gọn "Mình hỏi nhanh vài câu để chọn đúng sản phẩm, bấm là được" và bày sẵn nút bấm để khách thao tác nhẹ nhất.
+- Cách sửa: chỉ sửa câu prompt dặn model "nhớ hỏi tuổi" sẽ không chắc chắn, vì khi khách giục "giao liền giúp" thì model vẫn dễ chiều khách mà gọi tool. Phải sửa bằng thiết kế luồng: khóa cứng lệnh `goi_y_san_pham` phía sau trạng thái của thẻ 4 câu sàng lọc (`pass === 4`), thiếu bất kỳ điều kiện nào thì rẽ nhánh sang `chuyen_duoc_si` hoặc `khuyen_di_kham`.
+
+**Nguyên tắc HAX/PAIR.**
+
+- G1 (làm rõ hệ thống làm được gì, tuân thủ Điều 11 khoản 1 Luật Trí tuệ nhân tạo 134/2025/QH15): thanh thông báo đầu khung chat (chú thích số 1) nói rõ khách đang chat với trợ lý AI, AI không chẩn đoán và không nói liều.
+- G10 (thu hẹp phạm vi khi nghi ngờ): khi chưa biết người uống thuốc là ai, AI thu hẹp hành động về thẻ 4 câu sàng lọc bấm chọn (chú thích số 9), không tự đoán để gợi ý sản phẩm.
+- G2 và PAIR Explainability + Trust: hiển thị rõ danh sách 4 điều kiện sàng lọc trên cả thẻ từ chối tự gợi ý (chú thích số 8) lẫn thẻ sản phẩm (chú thích số 10), giúp khách tự kiểm tra căn cứ mà AI dựa vào.
+- G8 (gạt bỏ dễ dàng): ngay trên thẻ gợi ý sản phẩm có nút "Không cần gợi ý này" và "Hỏi dược sĩ thay" (chú thích số 11), khách gạt bỏ gợi ý của AI hoặc chuyển sang người thật chỉ bằng một cú bấm.
 
 ### Kịch bản đắt nhất #2: K6, bố 68 tuổi tức ngực, khách hỏi men tiêu hoá
 
@@ -108,11 +160,30 @@ Câu cuối chỉ hiện sau khi `chuyen_duoc_si` trả về thành công (lý d
 
 | Tool | Mức | Người viết lập luận |
 |---|---|---|
-| `goi_y_san_pham` | *(Nguyên điền sau khi nhóm chốt)* | Nguyên |
-| `chuyen_duoc_si` | *(Nguyên điền)* | Nguyên |
-| `khuyen_di_kham` | *(Nguyên điền)* | Nguyên |
+| `goi_y_san_pham` | tự làm có điều kiện (qua cổng 4 câu sàng lọc, khách tự bấm Đặt) | Nguyên |
+| `chuyen_duoc_si` | tự làm (kèm nút huỷ chuyển cho ca nhóm nguy cơ) | Nguyên |
+| `khuyen_di_kham` | tự làm (ưu tiên cao nhất, khoá gợi ý thuốc) | Nguyên |
 | `luu_ghi_chu_suc_khoe` | cần khách duyệt, tách làm hai bước | Vũ |
 | `ban_thuoc_ke_don` | cấm | Vũ |
+
+**`goi_y_san_pham`: tự làm có điều kiện.**
+
+- Điều kiện mở tool: AI chỉ tự gọi `goi_y_san_pham` cho sản phẩm không kê đơn khi đã xác nhận đủ 4 điều kiện sàng lọc (người lớn dưới 60 tuổi tự dùng; không mang thai hay cho con bú; không có bệnh nền hay đang uống thuốc khác; không có dấu hiệu nguy hiểm). Tool chỉ hiện thẻ gợi ý sản phẩm, người bấm nút "Đặt (bạn tự bấm)" cuối cùng vẫn là khách, kèm nút "Không cần gợi ý này" để bỏ qua.
+- Cost-of-error: nếu để tự làm không điều kiện mà gợi ý sai thuốc cho trẻ nhỏ, phụ nữ mang thai (K1, K2) hoặc người có dấu hiệu cấp cứu (K6) thì người uống chịu hại sức khoẻ trực tiếp và bảng tool ghi rõ "Không đảo lại được khi thuốc đã dùng". Ngược lại, nếu bắt chờ dược sĩ duyệt mọi gợi ý thì cả những khách người lớn khoẻ mạnh hỏi viên ngậm đau họng thông thường hay nước muối sinh lý (K4) lúc nửa đêm cũng phải xếp hàng, làm dài hàng chờ của dược sĩ trực.
+- Đã cân nhắc "cần dược sĩ duyệt mọi gợi ý": loại vì làm nghẽn hàng chờ dược sĩ, kéo trễ thời gian xử lý của các ca nguy hiểm (K6) và ca nhóm nguy cơ (K1, K2, K3, K8).
+- Đã cân nhắc "cấm": loại vì làm mất ý nghĩa của trợ lý AI trong việc giải tải các câu hỏi mua sản phẩm thông thường lúc tối muộn.
+
+**`chuyen_duoc_si`: tự làm.**
+
+- Cost-of-error: bảng tool ghi rõ chuyển cuộc chat cho dược sĩ trực là "Đảo lại được, tốn vài phút". Nếu AI chuyển thừa một ca sang dược sĩ thì chỉ mất vài phút chờ và trên thẻ giao diện khách có sẵn nút "Huỷ chuyển, mình hỏi việc khác" (chú thích số 8 trên prototype) để tự rút lại. Ngược lại, nếu giữ một ca trẻ nhỏ, bà bầu, người cao tuổi có bệnh nền (K1, K2, K3, K8) mà không chuyển ngay thì khách sốt ruột dễ tự lấy thuốc ở nhà cho người thân uống.
+- Đã cân nhắc "cần khách bấm xác nhận mới chuyển": loại cho các ca có dấu hiệu nguy hiểm (K6) hoặc ca trượt điều kiện sàng lọc (K1, K2, K8), vì nếu hỏi "bạn có muốn chuyển dược sĩ không?" mà khách bấm "Không" rồi đòi AI gợi ý thuốc tiếp thì AI không được phép gợi ý mà dược sĩ cũng không nhận được ca. Do đó AI tự chuyển luôn kèm tóm tắt, còn ở ca không cấp cứu khách vẫn bấm "Huỷ chuyển" được nếu muốn dừng.
+- Đã cân nhắc "cấm": loại vì chuyển dược sĩ là đường thoát an toàn bắt buộc của lát cắt khi AI gặp ca vượt khả năng tự gợi ý.
+
+**`khuyen_di_kham`: tự làm.**
+
+- Cost-of-error: ở các ca có dấu hiệu cấp cứu như tức ngực, vã mồ hôi, khó thở, co giật (K6), cái giá của việc chậm trễ vài phút để chờ người duyệt là tính mạng hoặc di chứng không đảo ngược được của người bệnh. Trong khi đó, nếu AI hiện thẻ khuyên đi khám thừa (do khách gõ nhầm từ khoá) thì bảng tool ghi rõ "Khách bỏ qua được", và trên thẻ có sẵn nút "Mình nhắn nhầm, không có dấu hiệu này" (chú thích số 5) để chuyển sang dược sĩ trực kiểm tra lại.
+- Đã cân nhắc "cần dược sĩ duyệt trước khi hiện cảnh báo": loại ngay vì bắt ca cấp cứu chờ dược sĩ đọc tin rồi mới hiện số 115 là vi phạm trực tiếp mục tiêu "ca nguy hiểm không nằm trong hàng chờ" của lát cắt.
+- Đã cân nhắc "cấm": loại vì không có tool này thì AI không thể phát cảnh báo cấp cứu tức thời.
 
 **`luu_ghi_chu_suc_khoe`: cần khách duyệt, tách hai bước.**
 
@@ -138,11 +209,11 @@ Mỗi người tự xếp 5 tool trong 5 phút, chưa bàn với nhau:
 
 | Tool | Vũ | Nguyên |
 |---|---|---|
-| `goi_y_san_pham` | tự làm có điều kiện | *(Nguyên điền)* |
-| `chuyen_duoc_si` | tự làm | *(Nguyên điền)* |
-| `khuyen_di_kham` | tự làm | *(Nguyên điền)* |
-| `luu_ghi_chu_suc_khoe` | cần khách duyệt | *(Nguyên điền)* |
-| `ban_thuoc_ke_don` | cấm | *(Nguyên điền)* |
+| `goi_y_san_pham` | tự làm có điều kiện | cần dược sĩ duyệt |
+| `chuyen_duoc_si` | tự làm | tự làm |
+| `khuyen_di_kham` | tự làm | tự làm |
+| `luu_ghi_chu_suc_khoe` | cần khách duyệt | cần khách duyệt |
+| `ban_thuoc_ke_don` | cấm | cấm |
 
 `goi_y_san_pham` khó xếp vì mức nào cũng có giá:
 
@@ -158,7 +229,7 @@ Cách nhóm chốt: tự làm có điều kiện.
 - Có dấu hiệu nguy hiểm thì tool bị khoá cả cuộc chat.
 - Khách vẫn phải tự bấm "Đặt", AI không tự tạo đơn.
 
-*(Nguyên bổ sung lý do của mình nếu lúc đầu chọn khác, và nhóm chốt sau khi bàn.)*
+Lúc tự xếp 5 phút đầu, Nguyên chọn "cần dược sĩ duyệt" cho `goi_y_san_pham` vì lo kịch bản K1 và K2: khách nhắn hỏi thuốc lúc tối muộn rất hay quên nói người uống là trẻ nhỏ hay bà bầu ở nhà, mà thuốc đã uống vào người thì bảng tool ghi rõ không đảo lại được. Vũ thì chọn "tự làm có điều kiện" vì lo nếu ca hỏi nước muối sinh lý (K4) hay người lớn khoẻ mạnh đau họng thông thường cũng bắt dược sĩ duyệt thì hàng chờ của dược sĩ sẽ bị tắc, làm trễ luôn cả ca cấp cứu K6. Sau khi bàn, hai anh em thống nhất chốt mức "tự làm có điều kiện": thay vì bắt dược sĩ duyệt bằng tay mọi ca, hệ thống chặn bằng thẻ 4 câu sàng lọc bắt buộc trên giao diện trước khi mở quyền gọi `goi_y_san_pham`, và nếu trượt dù chỉ 1 trong 4 điều kiện thì khoá `goi_y_san_pham` rồi tự động đẩy sang `chuyen_duoc_si`.
 
 ### Thử mức đã đặt
 
@@ -170,7 +241,17 @@ Cách nhóm chốt: tự làm có điều kiện.
 
 **Trên K8 (`luu_ghi_chu_suc_khoe`):** AI không lưu ngay khi khách nói "lưu giúp". Khách thấy nháp "thông tin của mẹ bạn: tiểu đường, đang uống thuốc huyết áp" cùng nút "Đồng ý lưu". Việc thứ hai (thuốc giảm đau cho bà) thiếu điều kiện "không bệnh nền, không thuốc kê đơn" nên `goi_y_san_pham` không chạy, AI chuyển dược sĩ.
 
-*(K1 đắt nhất #1 và kịch bản bình thường: Nguyên thử.)*
+**Trên K1 (đắt nhất #1, hỏi mua thuốc hạ sốt giảm đau "loại nhạy nhất" nhưng không nói người uống là ai):**
+
+- Cái sai có bị chặn không? Có. Tin nhắn chưa nói người uống là ai nên chưa đạt đủ 4 điều kiện mở `goi_y_san_pham`. AI không gửi thẻ thuốc hạ sốt người lớn mà chỉ hiện thẻ 4 câu sàng lọc bấm chọn (chú thích số 9). Khi khách bấm chọn `Trẻ em` (hoặc `Có` ở câu mang thai), `goi_y_san_pham` bị chặn hẳn và `chuyen_duoc_si` tự chạy để đưa ca sang dược sĩ trực kèm tóm tắt.
+- Còn việc nào AI làm khi lẽ ra phải hỏi không? Không. Trước khi khách bấm đủ 4 câu sàng lọc, AI không tự gợi ý sản phẩm và cũng chưa đẩy vào hàng chờ dược sĩ.
+- Người dùng bình thường có phải chờ vô ích không? Nếu người dùng thực sự mua thuốc cho con nhỏ thì việc chờ dược sĩ trực vài phút là cần thiết để bảo vệ an toàn cho bé, không phải chờ vô ích.
+
+**Trên kịch bản bình thường (tin mồi 2: người lớn khoẻ mạnh nhắn "Họng mình đau rát 2 ngày nay, có thuốc gì không?" hoặc hỏi nước muối sinh lý ở K4):**
+
+- Cái sai có bị chặn không? Có. Ở K4, AI đính chính rõ nước muối sinh lý chỉ giúp rửa mũi làm sạch dịch nhầy chứ không trị dứt điểm viêm xoang trước khi gợi ý. Ở ca đau rát họng thông thường, thẻ sản phẩm chỉ hiện sau khi đạt đủ 4/4 điều kiện sàng lọc và dẫn cách dùng về nhãn thuốc chứ không tự nói liều (chú thích số 10).
+- Còn việc nào AI làm khi lẽ ra phải hỏi không? Không. Dù đạt đủ 4/4 điều kiện để `goi_y_san_pham` tự hiện thẻ gợi ý "Viên ngậm thảo dược dịu họng", AI vẫn không tự tạo đơn mà để khách tự bấm nút "Đặt (bạn tự bấm)" (chú thích số 11).
+- Người dùng bình thường có phải chờ vô ích không? Không phải chờ dược sĩ duyệt. Khách chỉ mất khoảng 3 giây bấm 4 nút chọn trên thẻ sàng lọc (`Mình, người lớn`, `Không`, `Không`, `Không`) là nhận được gợi ý sản phẩm ngay lập tức lúc nửa đêm, đồng thời không làm nghẽn hàng chờ của dược sĩ trực.
 
 ### Luật thêm và tool tách bước
 
