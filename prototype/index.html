@@ -1,0 +1,653 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hỏi dược sĩ · prototype T1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  /* Design token theo shadcn/ui (theme zinc, dạng HSL), thêm success/warning/info cho trạng thái */
+  :root {
+    --background: 240 5% 97%;
+    --foreground: 240 10% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+    --primary: 240 5.9% 10%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
+    --destructive: 0 72.2% 50.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 240 5.9% 10%;
+    --radius: 0.5rem;
+    --success: 152 76% 30%;
+    --success-soft: 149 80% 96%;
+    --warning: 32 95% 40%;
+    --warning-soft: 48 100% 96%;
+    --info: 217 91% 50%;
+    --info-soft: 214 100% 97%;
+    --destructive-soft: 0 86% 97%;
+    --highlight: 48 96% 76%;
+    --anno: 271 81% 46%;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0; overflow: hidden;
+    font: 13px/1.45 Inter, system-ui, "Segoe UI", sans-serif;
+    color: hsl(var(--foreground)); background: hsl(var(--background));
+    display: flex; flex-direction: column;
+  }
+  code, .mono { font-family: "JetBrains Mono", ui-monospace, Consolas, monospace; font-size: 12px; }
+  .scroll { overflow-y: auto; scrollbar-width: none; }
+  .scroll::-webkit-scrollbar { display: none; }
+
+  /* Thanh trên */
+  header.top {
+    flex: none; display: flex; align-items: center; gap: 12px;
+    padding: 8px 16px; background: hsl(var(--card)); border-bottom: 1px solid hsl(var(--border));
+  }
+  .brand { display: flex; flex-direction: column; margin-right: auto; min-width: 0; }
+  .brand b { font-size: 14px; font-weight: 600; }
+  .brand span { color: hsl(var(--muted-foreground)); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tabs { display: inline-flex; padding: 3px; gap: 2px; background: hsl(var(--muted)); border-radius: calc(var(--radius) + 2px); }
+  .demo-btn {
+    border: 0; background: transparent; color: hsl(var(--muted-foreground));
+    border-radius: var(--radius); padding: 5px 10px; font: 500 12px Inter, system-ui, sans-serif; cursor: pointer; white-space: nowrap;
+  }
+  .demo-btn:hover { color: hsl(var(--foreground)); }
+  .demo-btn.active { background: hsl(var(--card)); color: hsl(var(--foreground)); box-shadow: 0 1px 2px hsl(240 6% 10% / .08); }
+  .tools { display: flex; align-items: center; gap: 8px; }
+  label.sim { font-size: 12px; color: hsl(var(--muted-foreground)); display: flex; gap: 6px; align-items: center; cursor: pointer; white-space: nowrap; }
+  label.sim input { accent-color: hsl(var(--destructive)); }
+
+  main {
+    flex: 1; min-height: 0; display: grid; gap: 12px; padding: 12px 16px;
+    grid-template-columns: minmax(360px, 460px) 1fr; max-width: 1360px; width: 100%; margin: 0 auto;
+  }
+  .panel {
+    min-height: 0; display: flex; flex-direction: column; overflow: hidden;
+    background: hsl(var(--card)); border: 1px solid hsl(var(--border)); border-radius: calc(var(--radius) + 4px);
+    box-shadow: 0 1px 3px hsl(240 6% 10% / .06);
+  }
+  .panel-head { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 14px; border-bottom: 1px solid hsl(var(--border)); }
+  .panel-head b { font-size: 13px; font-weight: 600; }
+  .panel-head small { display: block; color: hsl(var(--muted-foreground)); font-size: 11px; }
+  .eyebrow { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: hsl(var(--muted-foreground)); }
+
+  /* Màn hình 1: chat của khách */
+  .avatar { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: hsl(var(--success)); color: #fff; font-weight: 700; font-size: 12px; flex: none; }
+  .who-head { display: flex; gap: 10px; align-items: center; }
+  .online { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: hsl(var(--success)); margin-right: 4px; vertical-align: middle; }
+  .ai-banner { flex: none; font-size: 11.5px; background: hsl(var(--info-soft)); color: hsl(var(--info)); padding: 6px 14px; border-bottom: 1px solid hsl(var(--border)); }
+  .chat { flex: 1; min-height: 0; padding: 12px; display: flex; flex-direction: column; gap: 8px; background: hsl(var(--background)); }
+  .msg { max-width: 88%; padding: 7px 10px; border-radius: calc(var(--radius) + 4px); white-space: pre-wrap; }
+  .msg.user { align-self: flex-end; background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); border-bottom-right-radius: 4px; }
+  .msg.ai { align-self: flex-start; background: hsl(var(--card)); border: 1px solid hsl(var(--border)); border-bottom-left-radius: 4px; }
+  .msg.sys { align-self: center; font-size: 11px; color: hsl(var(--muted-foreground)); background: none; padding: 0; text-align: center; }
+  .who { font-size: 10.5px; font-weight: 600; color: hsl(var(--muted-foreground)); margin-bottom: 1px; }
+  mark { background: hsl(var(--highlight)); color: inherit; padding: 0 3px; border-radius: 3px; }
+  .card { align-self: stretch; border-radius: calc(var(--radius) + 2px); padding: 10px 12px; border: 1px solid hsl(var(--border)); background: hsl(var(--card)); box-shadow: 0 1px 2px hsl(240 6% 10% / .05); }
+  .card h4 { margin: 0 0 4px; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .card.danger { border-color: hsl(var(--destructive) / .5); background: hsl(var(--destructive-soft)); }
+  .card.danger h4 { color: hsl(var(--destructive)); }
+  .card.blocked { background: hsl(var(--muted)); border-style: dashed; }
+  .card.consent { border-color: hsl(var(--warning) / .4); background: hsl(var(--warning-soft)); }
+  .card.product { border-color: hsl(var(--success) / .4); }
+  .why { font-size: 12px; margin: 6px 0 0; color: hsl(var(--foreground) / .85); }
+  .status {
+    display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; padding: 3px 8px; margin-top: 6px;
+    border-radius: 999px; background: hsl(var(--card)); border: 1px solid hsl(var(--border)); color: hsl(var(--muted-foreground));
+  }
+  .status::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .status.ok { color: hsl(var(--success)); border-color: hsl(var(--success) / .35); background: hsl(var(--success-soft)); }
+  .status.fail { color: hsl(var(--destructive)); border-color: hsl(var(--destructive) / .35); background: hsl(var(--destructive-soft)); }
+  .row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 30px; padding: 0 12px;
+    border-radius: var(--radius); border: 1px solid hsl(var(--input)); background: hsl(var(--card)); color: hsl(var(--foreground));
+    font: 500 12px Inter, system-ui, sans-serif; cursor: pointer; text-decoration: none; white-space: nowrap;
+  }
+  .btn:hover { background: hsl(var(--accent)); }
+  .btn.primary { background: hsl(var(--primary)); border-color: hsl(var(--primary)); color: hsl(var(--primary-foreground)); }
+  .btn.primary:hover { background: hsl(var(--primary) / .9); }
+  .btn.call { height: 36px; padding: 0 16px; background: hsl(var(--destructive)); border-color: hsl(var(--destructive)); color: hsl(var(--destructive-foreground)); font-weight: 600; font-size: 14px; }
+  .btn.call:hover { background: hsl(var(--destructive) / .9); }
+  .btn.link { border: 0; background: none; height: auto; padding: 2px 0; color: hsl(var(--muted-foreground)); text-decoration: underline; text-underline-offset: 3px; }
+  .btn:disabled { opacity: .5; pointer-events: none; }
+  .checklist { list-style: none; padding: 0; margin: 6px 0 0; font-size: 12px; display: grid; gap: 1px; }
+  .checklist li::before { display: inline-block; width: 16px; font-weight: 700; }
+  .ck-ok::before { content: "✓"; color: hsl(var(--success)); }
+  .ck-no::before { content: "✕"; color: hsl(var(--destructive)); }
+  .ck-unk::before { content: "?"; color: hsl(var(--warning)); }
+  .q { margin: 6px 0 0; display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+  .q div { font-size: 12px; color: hsl(var(--muted-foreground)); }
+  .q span { display: inline-flex; gap: 4px; }
+  .chip {
+    height: 26px; padding: 0 10px; border-radius: 999px; border: 1px solid hsl(var(--input)); background: hsl(var(--card));
+    font: 500 12px Inter, system-ui, sans-serif; cursor: pointer; color: hsl(var(--foreground));
+  }
+  .chip.on { background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); border-color: hsl(var(--primary)); }
+  .level { display: inline-flex; align-items: center; font-size: 10.5px; font-weight: 600; padding: 1px 7px; border-radius: 999px; border: 1px solid transparent; white-space: nowrap; }
+  .lv-auto { background: hsl(var(--success-soft)); color: hsl(var(--success)); border-color: hsl(var(--success) / .25); }
+  .lv-approve { background: hsl(var(--warning-soft)); color: hsl(var(--warning)); border-color: hsl(var(--warning) / .3); }
+  .lv-ban { background: hsl(var(--destructive-soft)); color: hsl(var(--destructive)); border-color: hsl(var(--destructive) / .3); }
+  .composer { flex: none; display: flex; gap: 6px; padding: 10px; border-top: 1px solid hsl(var(--border)); background: hsl(var(--card)); }
+  .composer input {
+    flex: 1; height: 32px; border: 1px solid hsl(var(--input)); border-radius: var(--radius); padding: 0 10px;
+    font: 13px Inter, system-ui, sans-serif; background: hsl(var(--card)); color: hsl(var(--foreground)); outline: none;
+  }
+  .composer input:focus { box-shadow: 0 0 0 2px hsl(var(--ring) / .15); border-color: hsl(var(--ring) / .4); }
+
+  /* Màn hình 2: dược sĩ */
+  .console { flex: 1; min-height: 0; display: grid; grid-template-columns: 250px 1fr; }
+  .queue { min-height: 0; border-right: 1px solid hsl(var(--border)); background: hsl(var(--muted) / .5); display: flex; flex-direction: column; }
+  .col-title { flex: none; padding: 8px 12px; border-bottom: 1px solid hsl(var(--border)); }
+  #queue { flex: 1; min-height: 0; }
+  .qitem { padding: 9px 12px; border-bottom: 1px solid hsl(var(--border)); cursor: pointer; font-size: 12.5px; }
+  .qitem:hover { background: hsl(var(--accent)); }
+  .qitem.sel { background: hsl(var(--card)); box-shadow: inset 3px 0 0 hsl(var(--primary)); }
+  .qitem .t { font-size: 11px; color: hsl(var(--muted-foreground)); margin-top: 2px; }
+  .flag { display: inline-flex; font-size: 10px; font-weight: 700; letter-spacing: .02em; color: hsl(var(--destructive-foreground)); background: hsl(var(--destructive)); border-radius: 4px; padding: 0 5px; margin-right: 4px; }
+  .flag.amber { background: hsl(var(--warning)); }
+  .detail { min-height: 0; display: flex; flex-direction: column; }
+  .detail-body { flex: 1; min-height: 0; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+  .box { border: 1px solid hsl(var(--border)); border-radius: calc(var(--radius) + 2px); padding: 10px 12px; background: hsl(var(--card)); }
+  .box h5 { margin: 0 0 6px; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: hsl(var(--muted-foreground)); }
+  .box dl { margin: 0; display: grid; grid-template-columns: 120px 1fr; gap: 3px 10px; font-size: 12.5px; }
+  .box dt { color: hsl(var(--muted-foreground)); }
+  .box dd { margin: 0; }
+  .log { font-family: "JetBrains Mono", ui-monospace, Consolas, monospace; font-size: 11.5px; margin: 0; padding-left: 16px; color: hsl(var(--foreground) / .85); }
+  .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  table.auto { width: 100%; border-collapse: collapse; font-size: 12px; }
+  table.auto td { border-bottom: 1px solid hsl(var(--border)); padding: 4px 2px; }
+  table.auto tr:last-child td { border-bottom: 0; }
+  .empty { color: hsl(var(--muted-foreground)); padding: 16px 4px; font-size: 12.5px; }
+
+  @media (max-width: 1100px) {
+    .detail-grid { grid-template-columns: 1fr; }
+    .console { grid-template-columns: 200px 1fr; }
+    .brand span { display: none; }
+  }
+
+  /* Số chú thích cho ảnh chụp (bật bằng ?annotate) */
+  .anno { display: inline-grid; place-items: center; vertical-align: middle; margin: 0 6px 1px 0; width: 18px; height: 18px; flex: none; border-radius: 50%; background: hsl(var(--anno)); color: #fff; font: 700 10.5px/1 Inter, system-ui, sans-serif; }
+  [data-anno].annotated { outline: 1.5px dashed hsl(var(--anno)); outline-offset: 2px; border-radius: 6px; }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <b>Hỏi dược sĩ · prototype T1</b>
+    <span>Dữ liệu dựng, không gọi AI thật. Chọn một ca, hoặc gõ ca lạ vào ô chat.</span>
+  </div>
+  <div class="tabs" role="tablist">
+    <button class="demo-btn" data-case="K6">K6 · bố tức ngực</button>
+    <button class="demo-btn" data-case="K8">K8 · lưu hồ sơ</button>
+    <button class="demo-btn" data-case="K5">K5 · kháng sinh</button>
+    <button class="demo-btn" data-case="NORMAL">Ca thường</button>
+  </div>
+  <div class="tools">
+    <button class="btn" id="tick">Tua 3 phút</button>
+    <label class="sim"><input type="checkbox" id="failTool"> Giả lập lỗi chuyển dược sĩ</label>
+  </div>
+</header>
+
+<main>
+  <section class="panel">
+    <div class="panel-head">
+      <div class="who-head">
+        <div class="avatar">P</div>
+        <div><b>Pharmacity · Hỏi dược sĩ</b><small><span class="online"></span>Dược sĩ trực online 24/7</small></div>
+      </div>
+      <span class="eyebrow">Màn hình 1 · khách</span>
+    </div>
+    <div class="ai-banner" data-anno="1">Bạn đang chat với trợ lý AI. Câu hỏi về thuốc, AI chuyển cho dược sĩ khi cần. AI không chẩn đoán và không nói liều.</div>
+    <div class="chat scroll" id="chat"></div>
+    <form class="composer" id="composer">
+      <input id="input" placeholder="Nhắn cho dược sĩ..." autocomplete="off">
+      <button class="btn primary">Gửi</button>
+    </form>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <div><b>Bảng điều phối dược sĩ</b><small>Ca do trợ lý chuyển sang, kèm tóm tắt</small></div>
+      <span class="eyebrow">Màn hình 2 · dược sĩ trực</span>
+    </div>
+    <div class="console">
+      <div class="queue">
+        <div class="col-title eyebrow">Hàng chờ</div>
+        <div id="queue" class="scroll"></div>
+      </div>
+      <div class="detail">
+        <div class="col-title eyebrow">Chi tiết ca</div>
+        <div class="detail-body scroll" id="detail"><div class="empty">Chưa chọn ca nào.</div></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+const CASES = {
+  K6: "shop ơi bố mình 68t từ tối cứ tức ngực, vã mồ hôi, chắc ăn không tiêu. nhà còn ít men tiêu hoá, mua thêm loại nào uống cho đỡ đầy bụng ạ",
+  K8: "lưu vào hồ sơ giúp em là mẹ em bị tiểu đường, đang uống thuốc huyết áp nhé, lần sau khỏi khai lại. À mẹ em đau răng từ chiều, mua gì giảm đau cho bà được ạ",
+  K5: "e cần mua amoxicillin 500, hôm trc bác sĩ kê cho mẹ e r mà hết thuốc, đơn thì làm mất r. ship giúp e 2 vỉ nha",
+  NORMAL: "Họng mình đau rát 2 ngày nay, có thuốc gì không?"
+};
+
+const DANGER = ["tức ngực", "đau ngực", "thắt ngực", "khó thở", "vã mồ hôi", "co giật", "lơ mơ", "ngất", "tím tái", "ho ra máu"];
+const RX = ["amoxicillin", "kháng sinh", "augmentin", "cefixim", "azithromycin", "thuốc kê đơn"];
+const CHRONIC = ["tiểu đường", "huyết áp", "tim mạch", "hen", "suy thận"];
+
+const TOOLS = [
+  ["goi_y_san_pham", "tự làm có điều kiện", "lv-auto"],
+  ["chuyen_duoc_si", "tự làm", "lv-auto"],
+  ["khuyen_di_kham", "tự làm", "lv-auto"],
+  ["luu_ghi_chu_suc_khoe", "khách duyệt", "lv-approve"],
+  ["ban_thuoc_ke_don", "cấm", "lv-ban"]
+];
+
+const $ = s => document.querySelector(s);
+const chat = $("#chat");
+let state, queue, selected, caseSeq = 0;
+
+function esc(s) {
+  return s.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+function shortTitle(s) { return s.length > 42 ? s.slice(0, 40) + "..." : s; }
+function now() {
+  const d = new Date();
+  return String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+}
+function found(text, list) {
+  const t = text.toLowerCase();
+  return list.filter(k => t.includes(k.trim()));
+}
+function ageOf(text) {
+  const m = text.match(/(\d{1,3})\s*(t|tuổi)\b/i);
+  return m ? +m[1] : null;
+}
+function highlight(text, words) {
+  let out = esc(text);
+  words.forEach(w => {
+    const re = new RegExp(esc(w).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi");
+    out = out.replace(re, m => "<mark>" + m + "</mark>");
+  });
+  return out;
+}
+function add(html, cls) {
+  const el = document.createElement("div");
+  el.className = cls;
+  el.innerHTML = html;
+  chat.appendChild(el);
+  annotate();
+  chat.scrollTop = chat.scrollHeight;
+  return el;
+}
+function say(text) { return add('<div class="who">Trợ lý AI</div>' + esc(text), "msg ai"); }
+function sys(text) { return add(esc(text), "msg sys"); }
+
+function reset() {
+  chat.innerHTML = "";
+  state = { locked: false, transferred: null, waitingAfterDanger: false, screening: null };
+  queue = [
+    { id: "q1", title: "Hỏi giá nước muối sinh lý", time: "23:32", flag: null, summary: null },
+    { id: "q2", title: "Còn hàng khẩu trang N95 không", time: "23:35", flag: null, summary: null }
+  ];
+  selected = null;
+  renderQueue();
+  renderDetail();
+}
+
+function handle(text) {
+  add(esc(text), "msg user");
+  if (state.locked) {
+    say("Bác đang có dấu hiệu cần đi cấp cứu nên mình không gợi ý thuốc trong cuộc chat này. Dược sĩ trực sẽ trả lời bạn ở đây.");
+    return;
+  }
+  const danger = found(text, DANGER);
+  if (danger.length) return dangerFlow(text, danger);
+  const rx = found(text, RX);
+  const wantsSave = /lưu/i.test(text);
+  if (wantsSave) return saveFlow(text);
+  if (rx.length) return rxFlow(text, rx);
+  if (personOf(text).key !== "adult" || found(text, CHRONIC).length) return riskFlow(text, found(text, CHRONIC));
+  return screeningFlow(text);
+}
+
+/* K6: dấu hiệu nguy hiểm */
+function personOf(text) {
+  const age = ageOf(text);
+  const t = " " + text.toLowerCase().replace(/[,.!?]/g, " ") + " ";
+  const has = ws => ws.some(w => t.includes(" " + w + " "));
+  if ((age !== null && age < 12) || has(["bé", "con mình", "con em", "con tôi", "cháu"]) || t.includes("tháng tuổi")) return { key: "child", label: "trẻ nhỏ", age };
+  if (has(["bầu", "mang thai", "cho con bú"])) return { key: "preg", label: "người đang mang thai hoặc cho con bú", age };
+  if ((age !== null && age >= 60) || has(["bố", "mẹ", "ông", "bà"])) return { key: "elder", label: "người lớn tuổi", age };
+  return { key: "adult", label: "người lớn", age };
+}
+
+function dangerFlow(text, danger) {
+  state.locked = true;
+  const p = personOf(text);
+  const evidence = danger.concat(p.age ? [String(p.age) + "t"] : []);
+  const chest = danger.some(d => d.includes("ngực"));
+  const body = chest && p.key === "elder"
+    ? "Tức ngực kèm vã mồ hôi ở người lớn tuổi là dấu hiệu cần đi cấp cứu, không nên chờ xem có phải đầy bụng không. Bạn gọi 115 hoặc đưa bác tới cơ sở y tế gần nhất ngay bây giờ, đừng để bác tự đi lại một mình. Trường hợp này mình không gợi ý thuốc."
+    : "Những dấu hiệu bạn kể cần nhân viên y tế xem ngay. Bạn gọi 115 hoặc đưa người bệnh tới cơ sở y tế gần nhất ngay bây giờ. Trường hợp này mình không gợi ý thuốc.";
+  const card = add(`
+    <h4>Cần đi cấp cứu ngay</h4>
+    <div>${body}</div>
+    <div class="row"><a class="btn call" href="tel:115">Gọi 115</a></div>
+    <div class="why" data-anno="3"><b>Vì sao mình khuyên đi khám:</b> trong tin nhắn của bạn có "${highlight(text, evidence)}"</div>
+    <div class="status" id="dangerStatus" data-anno="4">Đang báo dược sĩ trực...</div>
+    <div class="row" data-anno="5">
+      <button class="btn" id="calledBtn">Mình đã gọi 115 / đang đưa bác đi</button>
+      <button class="btn link" id="mistakeBtn">Mình nhắn nhầm, không có dấu hiệu này</button>
+    </div>`, "card danger");
+  card.dataset.anno = "2";
+  annotate();
+  transfer({
+    flag: "NGUY HIỂM",
+    title: shortTitle(text),
+    user: cap(p.label) + (p.age ? ", " + p.age + " tuổi" : ""),
+    symptom: danger.join(", "),
+    raw: text,
+    did: ["khuyen_di_kham → đã hiện thẻ đỏ, nút Gọi 115", "goi_y_san_pham → khoá cả cuộc chat", "chuyen_duoc_si → ca này"],
+    customer: "Chưa bấm gì",
+    evidence
+  }, card.querySelector("#dangerStatus"), true);
+  card.querySelector("#calledBtn").onclick = e => {
+    e.target.disabled = true;
+    add(esc("Mình đã gọi 115 / đang đưa bác đi"), "msg user");
+    say("Bạn ở cạnh bác, mang theo các thuốc bác đang dùng để đưa bác sĩ xem. Dược sĩ trực sẽ nhắn hỏi thăm sau.");
+    updateCase({ customer: "Đã bấm: đã gọi 115 / đang đưa đi (" + now() + ")" });
+    state.waitingAfterDanger = false;
+  };
+  card.querySelector("#mistakeBtn").onclick = e => {
+    e.target.disabled = true;
+    add(esc("Mình nhắn nhầm, không có dấu hiệu này"), "msg user");
+    say("Mình vẫn để dược sĩ trực xem lại ca này cho chắc, bạn chờ vài phút. Trong lúc đó mình không gợi ý thuốc.");
+    updateCase({ customer: "Đã bấm: nhắn nhầm, không có dấu hiệu này (" + now() + "). Cần dược sĩ hỏi lại." });
+    state.waitingAfterDanger = false;
+  };
+  state.waitingAfterDanger = true;
+}
+
+/* K5: thuốc kê đơn, việc cấm */
+function rxFlow(text, rx) {
+  say(cap(rx[0]) + " là thuốc kê đơn, phải có đơn mới bán được, nên mình không bán qua chat và cũng không gợi ý thuốc khác thay vào. Người dùng thuốc đang bị gì? Nếu sốt cao hay đau nhiều thì nên đi khám lại.");
+  const card = add(`
+    <h4>Bán thuốc kê đơn <span class="level lv-ban">AI không làm</span></h4>
+    <div>Thuốc kê đơn cần dược sĩ xem đơn. Dược sĩ có thể giúp bạn cách lấy lại đơn hoặc mua tại nhà thuốc khi có đơn.</div>
+    <div class="row"><button class="btn primary" id="rxTransfer">Chuyển dược sĩ</button></div>`, "card blocked");
+  card.dataset.anno = "6";
+  card.querySelector("#rxTransfer").onclick = e => {
+    e.target.disabled = true;
+    const st = add("", "status");
+    transfer({
+      flag: "KÊ ĐƠN", title: shortTitle(text), user: cap(personOf(text).label) + ", chưa rõ tuổi",
+      symptom: "Chưa rõ, khách chưa nói bị gì", raw: text,
+      did: ["ban_thuoc_ke_don → cấm, không có nút mua", "goi_y_san_pham → không gợi ý thuốc thay thế", "chuyen_duoc_si → ca này"],
+      customer: "Bấm Chuyển dược sĩ", evidence: rx
+    }, st, false);
+  };
+}
+
+/* K8: hai việc trong một tin, lưu cần khách duyệt */
+function saveFlow(text) {
+  say("Bạn nhờ mình hai việc, mình làm từng việc nhé.");
+  const draft = add(`
+    <h4>1. Lưu vào hồ sơ <span class="level lv-approve">cần bạn đồng ý</span></h4>
+    <div><b>Nháp, chưa lưu:</b> "Mẹ: tiểu đường, đang uống thuốc huyết áp."</div>
+    <ul class="checklist">
+      <li>Thông tin của <b>mẹ bạn</b>, lưu trong hồ sơ của <b>bạn</b></li>
+      <li>Dược sĩ Pharmacity đọc được khi bạn hỏi lần sau</li>
+      <li>Xoá bất cứ lúc nào ở Tài khoản › Ghi chú sức khoẻ</li>
+    </ul>
+    <div class="row">
+      <button class="btn primary" id="saveYes">Đồng ý lưu</button>
+      <button class="btn" id="saveNo">Không lưu</button>
+    </div>`, "card consent");
+  draft.dataset.anno = "7";
+  draft.querySelector("#saveYes").onclick = () => {
+    draft.querySelector(".row").innerHTML = '<span class="status ok">Đã lưu lúc ' + now() + '</span> <button class="btn link" id="undoSave">Hoàn tác</button>';
+    draft.querySelector("#undoSave").onclick = () => {
+      draft.querySelector(".row").innerHTML = '<span class="status">Đã xoá ghi chú, hồ sơ không còn dòng này.</span>';
+    };
+  };
+  draft.querySelector("#saveNo").onclick = () => {
+    draft.querySelector(".row").innerHTML = '<span class="status">Không lưu. Nháp sẽ mất khi bạn đóng cuộc chat.</span>';
+  };
+  riskFlow(text, found(text, CHRONIC), "2. Thuốc cho người nhà");
+}
+
+/* Người dùng thuốc thuộc nhóm nguy cơ: không tự gợi ý */
+function riskFlow(text, risk, heading) {
+  const p = personOf(text);
+  const chronic = found(text, CHRONIC);
+  const onRx = /đang uống thuốc|đang dùng thuốc/i.test(text);
+  const reasons = [p.label].concat(chronic.length ? ["có " + chronic.join(", ")] : []).concat(onRx ? ["đang uống thuốc khác"] : []);
+  const li = (ok, label) => `<li class="${ok === null ? "ck-unk" : ok ? "ck-ok" : "ck-no"}">${label}</li>`;
+  const card = add(`
+    <h4>${heading || "Gợi ý thuốc"} <span class="level lv-auto">chuyển dược sĩ</span></h4>
+    <div>Người dùng thuốc là ${esc(reasons.join(", "))} nên mình không tự chọn thuốc. Dược sĩ sẽ chọn giúp bạn loại hợp với người dùng.</div>
+    <ul class="checklist" data-anno="8">
+      ${li(p.key === "adult", "Người lớn dưới 60 tuổi, không mang thai hay cho con bú")}
+      ${li(chronic.length ? false : null, "Không có bệnh nền")}
+      ${li(onRx ? false : null, "Không đang uống thuốc kê đơn")}
+      ${li(true, "Không có dấu hiệu nguy hiểm")}
+    </ul>
+    <div class="status" id="riskStatus">Đang báo dược sĩ trực...</div>
+    <div class="row"><button class="btn link" id="cancelTransfer">Huỷ chuyển, mình hỏi việc khác</button></div>`, "card");
+  transfer({
+    flag: "NHÓM NGUY CƠ", title: shortTitle(text), user: cap(reasons.join(", ")),
+    symptom: "Xem tin nhắn gốc", raw: text,
+    did: (/lưu/i.test(text) ? ["luu_ghi_chu_suc_khoe → nháp, chờ khách đồng ý"] : []).concat(["goi_y_san_pham → không chạy, người dùng thuộc nhóm cần dược sĩ", "chuyen_duoc_si → ca này"]),
+    customer: "Chưa bấm gì", evidence: risk
+  }, card.querySelector("#riskStatus"), false);
+  card.querySelector("#cancelTransfer").onclick = e => {
+    e.target.disabled = true;
+    queue = queue.filter(q => q.id !== state.transferred);
+    renderQueue(); renderDetail();
+    card.querySelector("#riskStatus").className = "status";
+    card.querySelector("#riskStatus").textContent = "Đã huỷ chuyển. Bạn có thể hỏi lại bất cứ lúc nào.";
+  };
+}
+
+/* Ca thường: hỏi câu sàng lọc rồi mới gợi ý */
+function screeningFlow(text) {
+  state.screening = {};
+  say("Mình hỏi nhanh vài câu để chọn đúng sản phẩm, bấm là được.");
+  const qs = [
+    ["who", "Ai sẽ dùng thuốc?", ["Mình, người lớn", "Trẻ em", "Người trên 60 tuổi"]],
+    ["preg", "Có đang mang thai hoặc cho con bú?", ["Không", "Có"]],
+    ["chronic", "Có bệnh nền hoặc đang uống thuốc khác?", ["Không", "Có"]],
+    ["sign", "Có sốt cao, khó nuốt, khó thở không?", ["Không", "Có"]]
+  ];
+  const card = add('<h4>Câu sàng lọc</h4>' + qs.map(([k, label, opts]) =>
+    `<div class="q"><div>${label}</div><span>${opts.map((o, i) => `<button class="chip" data-k="${k}" data-i="${i}">${o}</button>`).join("")}</span></div>`).join(""), "card");
+  card.dataset.anno = "9";
+  card.querySelectorAll(".chip").forEach(ch => ch.onclick = () => {
+    card.querySelectorAll(`.chip[data-k="${ch.dataset.k}"]`).forEach(c => c.classList.remove("on"));
+    ch.classList.add("on");
+    state.screening[ch.dataset.k] = +ch.dataset.i;
+    if (Object.keys(state.screening).length === qs.length) finishScreening(text);
+  });
+}
+
+function finishScreening(text) {
+  const s = state.screening;
+  const ok = { who: s.who === 0, preg: s.preg === 0, chronic: s.chronic === 0, sign: s.sign === 0 };
+  const pass = Object.values(ok).filter(Boolean).length;
+  if (!ok.sign) {
+    dangerFlow(text + " (khách chọn: có sốt cao / khó nuốt / khó thở)", ["sốt cao", "khó thở"]);
+    return;
+  }
+  if (pass < 4) {
+    const st = add("", "status");
+    say("Trường hợp này mình chuyển dược sĩ chọn thuốc cho chắc.");
+    transfer({
+      flag: null, title: "Đau họng, nhóm cần dược sĩ xem", user: ["Người lớn", "Trẻ em", "Trên 60 tuổi"][s.who],
+      symptom: "Đau rát họng 2 ngày", raw: text,
+      did: ["goi_y_san_pham → không chạy, thiếu " + (4 - pass) + "/4 điều kiện", "chuyen_duoc_si → ca này"],
+      customer: "Đã trả lời câu sàng lọc", evidence: []
+    }, st, false);
+    return;
+  }
+  const card = add(`
+    <h4>Gợi ý cho bạn <span class="level lv-auto">AI tự gợi ý</span></h4>
+    <div><b>Viên ngậm thảo dược dịu họng</b> (sản phẩm minh hoạ) · 45.000đ</div>
+    <div class="why" data-anno="10">Đủ 4/4 điều kiện sàng lọc:
+      <ul class="checklist">
+        <li class="ck-ok">Người lớn tự dùng</li><li class="ck-ok">Không mang thai, không cho con bú</li>
+        <li class="ck-ok">Không bệnh nền, không thuốc khác</li><li class="ck-ok">Không sốt cao, khó nuốt, khó thở</li>
+      </ul>
+      Cách dùng: xem trên nhãn hoặc hỏi dược sĩ. Đau quá 5 ngày hoặc sốt thì nên đi khám.
+    </div>
+    <div class="row" data-anno="11">
+      <button class="btn primary" id="order">Đặt (bạn tự bấm)</button>
+      <button class="btn" id="hide">Không cần gợi ý này</button>
+      <button class="btn" id="askPharm">Hỏi dược sĩ thay</button>
+    </div>`, "card product");
+  card.querySelector("#order").onclick = e => { e.target.disabled = true; sys("Đã thêm vào giỏ. Bạn xác nhận đơn ở bước thanh toán."); };
+  card.querySelector("#hide").onclick = () => { card.remove(); say("Mình đã ẩn gợi ý. Bạn cần gì thêm thì cứ nhắn."); };
+  card.querySelector("#askPharm").onclick = e => {
+    e.target.disabled = true;
+    const st = add("", "status");
+    transfer({ flag: null, title: "Đau họng, khách muốn hỏi dược sĩ", user: "Người lớn", symptom: "Đau rát họng 2 ngày", raw: text,
+      did: ["goi_y_san_pham → đã gợi ý viên ngậm", "chuyen_duoc_si → khách tự bấm"], customer: "Bấm Hỏi dược sĩ thay", evidence: [] }, st, false);
+  };
+}
+
+/* chuyen_duoc_si: câu "đã nhận ca" chỉ hiện khi tool trả về thành công */
+function transfer(info, statusEl, urgent) {
+  statusEl.className = "status";
+  statusEl.textContent = "Đang báo dược sĩ trực...";
+  setTimeout(() => {
+    if ($("#failTool").checked) {
+      statusEl.className = "status fail";
+      statusEl.textContent = urgent
+        ? "Chưa kết nối được dược sĩ. Bạn gọi 115 trước, mình sẽ thử báo lại."
+        : "Chưa kết nối được dược sĩ. Bạn thử lại sau ít phút hoặc gọi tổng đài nhà thuốc.";
+      return;
+    }
+    const id = "c" + (++caseSeq);
+    const item = Object.assign({ id, time: now() }, info);
+    if (urgent) queue.unshift(item); else queue.push(item);
+    state.transferred = id;
+    selected = id;
+    statusEl.className = "status ok";
+    statusEl.textContent = "Dược sĩ trực đã nhận ca lúc " + item.time + ", sẽ nhắn bạn ở cuộc chat này.";
+    renderQueue(); renderDetail();
+  }, 700);
+}
+
+function updateCase(patch) {
+  const c = queue.find(q => q.id === state.transferred);
+  if (c) Object.assign(c, patch);
+  renderDetail();
+}
+
+function renderQueue() {
+  const box = $("#queue");
+  box.innerHTML = queue.map(q => `
+    <div class="qitem ${q.id === selected ? "sel" : ""}" data-id="${q.id}" ${q.flag === "NGUY HIỂM" ? 'data-anno="12"' : ""}>
+      ${q.flag ? `<span class="flag ${q.flag === "NGUY HIỂM" ? "" : "amber"}">${q.flag}</span>` : ""}${esc(q.title)}
+      <div class="t">${q.time}${q.flag === "NGUY HIỂM" ? " · đưa lên đầu hàng" : ""}</div>
+    </div>`).join("");
+  box.querySelectorAll(".qitem").forEach(el => el.onclick = () => { selected = el.dataset.id; renderQueue(); renderDetail(); });
+  annotate();
+}
+
+function renderDetail() {
+  const d = $("#detail");
+  const c = queue.find(q => q.id === selected);
+  const autoTable = `
+    <div class="box" data-anno="14"><h5>Mức tự chủ của trợ lý</h5>
+      <table class="auto">${TOOLS.map(([t, lv, cls]) => `<tr><td><code>${t}</code></td><td><span class="level ${cls}">${lv}</span></td></tr>`).join("")}</table>
+    </div>`;
+  if (!c || !c.raw) {
+    d.innerHTML = (c ? `<div class="box"><b>${esc(c.title)}</b><div class="t">Câu hỏi thông tin, không qua AI sàng lọc.</div></div>` : '<div class="empty">Chưa chọn ca nào.</div>') + autoTable;
+    annotate();
+    return;
+  }
+  d.innerHTML = `
+    <div class="box" data-anno="13"><h5>Tóm tắt do trợ lý soạn</h5>
+      <dl>
+        <dt>Mức ưu tiên</dt><dd>${c.flag ? `<span class="flag ${c.flag === "NGUY HIỂM" ? "" : "amber"}">${c.flag}</span>` : "Thường"}</dd>
+        <dt>Người dùng thuốc</dt><dd>${esc(c.user)}</dd>
+        <dt>Triệu chứng</dt><dd>${esc(c.symptom)}</dd>
+        <dt>Tin nhắn gốc</dt><dd>${highlight(c.raw, c.evidence || [])}</dd>
+        <dt>Khách đã bấm</dt><dd>${esc(c.customer)}</dd>
+      </dl>
+    </div>
+    <div class="row" style="margin-top:0">
+      <button class="btn primary" id="reply">Nhắn khách</button>
+      <button class="btn" id="call">Gọi lại cho khách</button>
+    </div>
+    <div class="detail-grid">
+      <div class="box"><h5>Trợ lý đã làm (hệ thống ghi)</h5>
+        <ul class="log">${c.did.map(x => `<li>${esc(x)}</li>`).join("")}</ul>
+      </div>
+      ${autoTable}
+    </div>`;
+  d.querySelector("#reply").onclick = () => {
+    add('<div class="who">Dược sĩ trực</div>' + esc("Chào bạn, mình là dược sĩ trực. Mình đã đọc tin nhắn của bạn, bạn cho mình hỏi thêm..."), "msg ai");
+  };
+  d.querySelector("#call").onclick = e => { e.target.textContent = "Đang gọi (mô phỏng)..."; };
+  annotate();
+}
+
+$("#tick").onclick = () => {
+  if (state.waitingAfterDanger) {
+    say("Bác đã được đưa đi khám chưa? Nếu chưa, bạn bấm Gọi 115 ở trên.");
+    updateCase({ customer: "Không phản hồi sau 3 phút, AI đã nhắc lại một lần" });
+  } else {
+    sys("(Đã tua 3 phút, không có việc gì chờ nhắc.)");
+  }
+};
+
+$("#composer").onsubmit = e => {
+  e.preventDefault();
+  const v = $("#input").value.trim();
+  if (!v) return;
+  $("#input").value = "";
+  handle(v);
+};
+
+function runCase(key) {
+  document.querySelectorAll(".demo-btn[data-case]").forEach(x => x.classList.toggle("active", x.dataset.case === key));
+  reset();
+  handle(CASES[key]);
+}
+document.querySelectorAll(".demo-btn[data-case]").forEach(b => b.onclick = () => runCase(b.dataset.case));
+
+function annotate() {
+  if (!new URLSearchParams(location.search).has("annotate")) return;
+  document.querySelectorAll("[data-anno]").forEach(el => {
+    if (el.classList.contains("annotated")) return;
+    el.classList.add("annotated");
+    const b = document.createElement("span");
+    b.className = "anno";
+    b.textContent = el.dataset.anno;
+    const target = el.querySelector(":scope > h4, :scope > h5, :scope > li") || el;
+    if (target.querySelector(":scope > .anno")) return;
+    target.prepend(b);
+  });
+}
+
+reset();
+const start = new URLSearchParams(location.search).get("case");
+if (start && CASES[start]) runCase(start);
+</script>
+</body>
+</html>
